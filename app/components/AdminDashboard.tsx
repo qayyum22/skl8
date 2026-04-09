@@ -1,0 +1,157 @@
+﻿"use client";
+
+import { AlertTriangle, BarChart3, CheckCircle2, Clock3, ShieldAlert, Star, Users } from "lucide-react";
+import { useMemo } from "react";
+import { useSessions } from "@/hooks/useSessions";
+import type { SupportCategory } from "@/types";
+import { AuthStatus } from "./AuthStatus";
+import { DatabaseOperationsPanel } from "./DatabaseOperationsPanel";
+
+function average(values: number[]) {
+  if (values.length === 0) return 0;
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function minutesBetween(start: Date, end: Date) {
+  return Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000));
+}
+
+const CATEGORY_LABELS: Record<SupportCategory, string> = {
+  login_access: "Login Access",
+  course_access: "Course Access",
+  schedule: "Schedule",
+  fees: "Fees",
+  certificate: "Certificate",
+  enrollment: "Enrollment",
+  general: "General",
+};
+
+export function AdminDashboard() {
+  const { sessions, refreshSessions } = useSessions();
+
+  const metrics = useMemo(() => {
+    const cases = sessions.filter((session) => session.agentCase);
+    const firstResponseMinutes = cases.flatMap((session) =>
+      session.agentCase?.firstResponseAt ? [minutesBetween(session.createdAt, session.agentCase.firstResponseAt)] : []
+    );
+    const resolutionMinutes = cases.flatMap((session) =>
+      session.agentCase?.resolvedAt ? [minutesBetween(session.createdAt, session.agentCase.resolvedAt)] : []
+    );
+    const csatValues = sessions.flatMap((session) => (session.satisfaction ? [session.satisfaction] : []));
+    const agentWorkload = cases.reduce<Record<string, number>>((acc, session) => {
+      const agent = session.agentCase?.assignedTo || "Unassigned";
+      acc[agent] = (acc[agent] || 0) + 1;
+      return acc;
+    }, {});
+    const agentResolutions = cases.reduce<Record<string, number>>((acc, session) => {
+      if (session.agentCase?.status !== "resolved") return acc;
+      const agent = session.agentCase?.assignedTo || "Unassigned";
+      acc[agent] = (acc[agent] || 0) + 1;
+      return acc;
+    }, {});
+    const categoryMix = cases.reduce<Record<string, number>>((acc, session) => {
+      const category = CATEGORY_LABELS[session.agentCase!.category];
+      acc[category] = (acc[category] || 0) + 1;
+      return acc;
+    }, {});
+    const urgentCases = cases.filter((session) => session.agentCase?.severity === "urgent");
+
+    return {
+      openQueue: cases.filter((session) => session.agentCase?.status !== "resolved").length,
+      escalationRate: cases.length === 0 ? 0 : Math.round((cases.filter((session) => session.agentCase?.escalated).length / cases.length) * 100),
+      firstResponse: average(firstResponseMinutes),
+      resolutionTime: average(resolutionMinutes),
+      csat: average(csatValues),
+      agentWorkload,
+      agentResolutions,
+      categoryMix,
+      urgentCases,
+    };
+  }, [sessions]);
+
+  return (
+    <div className="min-h-full bg-ink px-4 py-6 text-text md:px-6">
+      <div className="mx-auto max-w-7xl space-y-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-subtle">Admin View</p>
+            <h1 className="mt-1 text-2xl font-semibold text-text sm:text-3xl">Support Operations Dashboard</h1>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-subtle">Track queue health, service responsiveness, escalations, agent performance, and live backend operations across the skl8 support platform.</p>
+          </div>
+          <AuthStatus />
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="rounded-3xl border border-border bg-card p-5 shadow-sm"><div className="flex items-center gap-2 text-subtle"><Clock3 size={16} /><span className="text-xs uppercase tracking-wide">Open queue</span></div><p className="mt-3 text-3xl font-semibold">{metrics.openQueue}</p></div>
+          <div className="rounded-3xl border border-border bg-card p-5 shadow-sm"><div className="flex items-center gap-2 text-subtle"><BarChart3 size={16} /><span className="text-xs uppercase tracking-wide">Avg first response</span></div><p className="mt-3 text-3xl font-semibold">{metrics.firstResponse.toFixed(0)} min</p></div>
+          <div className="rounded-3xl border border-border bg-card p-5 shadow-sm"><div className="flex items-center gap-2 text-subtle"><CheckCircle2 size={16} /><span className="text-xs uppercase tracking-wide">Avg resolution</span></div><p className="mt-3 text-3xl font-semibold">{metrics.resolutionTime.toFixed(0)} min</p></div>
+          <div className="rounded-3xl border border-border bg-card p-5 shadow-sm"><div className="flex items-center gap-2 text-subtle"><ShieldAlert size={16} /><span className="text-xs uppercase tracking-wide">Escalation rate</span></div><p className="mt-3 text-3xl font-semibold">{metrics.escalationRate}%</p></div>
+          <div className="rounded-3xl border border-border bg-card p-5 shadow-sm"><div className="flex items-center gap-2 text-subtle"><Star size={16} /><span className="text-xs uppercase tracking-wide">Average CSAT</span></div><p className="mt-3 text-3xl font-semibold">{metrics.csat.toFixed(1) || "0.0"}</p></div>
+          <div className="rounded-3xl border border-border bg-card p-5 shadow-sm"><div className="flex items-center gap-2 text-subtle"><Users size={16} /><span className="text-xs uppercase tracking-wide">Assigned agents</span></div><p className="mt-3 text-3xl font-semibold">{Object.keys(metrics.agentWorkload).length}</p></div>
+        </div>
+
+        <DatabaseOperationsPanel sessionCount={sessions.length} onRefreshSessions={refreshSessions} />
+
+        <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
+          <section className="rounded-3xl border border-border bg-card p-5 shadow-sm">
+            <h2 className="text-lg font-semibold">Category mix</h2>
+            <div className="mt-4 space-y-3">
+              {Object.entries(metrics.categoryMix).map(([category, count]) => (
+                <div key={category} className="flex items-center justify-between rounded-2xl border border-border bg-surface/60 px-4 py-3 text-sm">
+                  <span>{category}</span>
+                  <span className="font-semibold">{count}</span>
+                </div>
+              ))}
+              {Object.keys(metrics.categoryMix).length === 0 && <p className="text-sm text-subtle">No case volume yet.</p>}
+            </div>
+          </section>
+
+          <section className="rounded-3xl border border-border bg-card p-5 shadow-sm">
+            <h2 className="text-lg font-semibold">Agent workload</h2>
+            <div className="mt-4 space-y-3">
+              {Object.entries(metrics.agentWorkload).map(([agent, count]) => (
+                <div key={agent} className="flex items-center justify-between rounded-2xl border border-border bg-surface/60 px-4 py-3 text-sm">
+                  <span>{agent}</span>
+                  <span className="font-semibold">{count} cases</span>
+                </div>
+              ))}
+              {Object.keys(metrics.agentWorkload).length === 0 && <p className="text-sm text-subtle">No assigned workload yet.</p>}
+            </div>
+          </section>
+
+          <section className="rounded-3xl border border-border bg-card p-5 shadow-sm lg:col-span-2 xl:col-span-1">
+            <h2 className="text-lg font-semibold">Resolved by agent</h2>
+            <div className="mt-4 space-y-3">
+              {Object.entries(metrics.agentResolutions).map(([agent, count]) => (
+                <div key={agent} className="flex items-center justify-between rounded-2xl border border-border bg-surface/60 px-4 py-3 text-sm">
+                  <span>{agent}</span>
+                  <span className="font-semibold">{count} resolved</span>
+                </div>
+              ))}
+              {Object.keys(metrics.agentResolutions).length === 0 && <p className="text-sm text-subtle">No resolved cases yet.</p>}
+            </div>
+          </section>
+        </div>
+
+        <section className="rounded-3xl border border-border bg-card p-5 shadow-sm">
+          <div className="flex items-center gap-2 text-subtle">
+            <AlertTriangle size={16} />
+            <h2 className="text-lg font-semibold text-text">Urgent learner cases</h2>
+          </div>
+          <div className="mt-4 space-y-3">
+            {metrics.urgentCases.map((session) => (
+              <div key={session.id} className="rounded-2xl border border-danger/20 bg-danger/5 px-4 py-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm font-semibold text-text">{session.title}</p>
+                  <span className="text-xs text-subtle">{session.agentCase?.assignedTo || "Unassigned"}</span>
+                </div>
+                <p className="mt-1 text-sm text-subtle">{session.agentCase?.summary}</p>
+              </div>
+            ))}
+            {metrics.urgentCases.length === 0 && <p className="text-sm text-subtle">No urgent learner cases right now.</p>}
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}
