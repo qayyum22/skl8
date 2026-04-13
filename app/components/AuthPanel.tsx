@@ -61,7 +61,9 @@ export function AuthPanel() {
   const handleSignOut = async () => {
     setStatus(null);
     await signOut();
-    setStatus({ tone: "neutral", message: "Signed out. Demo mode is still available from the role switcher." });
+    router.push("/");
+    router.refresh();
+    setStatus({ tone: "neutral", message: "Signed out successfully." });
   };
 
   const fillDemoCredentials = (demo: (typeof DEMO_CREDENTIALS)[number]) => {

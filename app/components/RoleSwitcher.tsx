@@ -1,9 +1,11 @@
 ﻿"use client";
 
 import { GraduationCap, LogOut } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useAppAuth } from "@/hooks/useAppAuth";
 
 export function RoleSwitcher() {
+  const router = useRouter();
   const { user, availableUsers, switchUser, mode, signOut, authBusy } = useAppAuth();
 
   if (mode === "supabase") {
@@ -15,7 +17,12 @@ export function RoleSwitcher() {
         <span className="text-[11px] uppercase tracking-wide text-subtle">{user.role}</span>
         <button
           type="button"
-          onClick={() => void signOut()}
+          onClick={() => {
+            void signOut().then(() => {
+              router.push("/");
+              router.refresh();
+            });
+          }}
           disabled={authBusy}
           className="inline-flex items-center gap-1 rounded-lg border border-border bg-surface px-2 py-1 text-[11px] text-text transition-all hover:border-accent/30 hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 disabled:opacity-60"
         >

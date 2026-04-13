@@ -31,3 +31,27 @@ export function requireSupabaseServiceRole() {
 
   return serviceRoleKey;
 }
+
+export function getGenerationModel() {
+  return process.env.OPENAI_GENERATION_MODEL || "gpt-5.4-nano";
+}
+
+export function getEmbeddingModel() {
+  return process.env.OPENAI_EMBEDDING_MODEL || "text-embedding-3-small";
+}
+
+export function getKnowledgeChunkSize() {
+  const value = Number(process.env.KNOWLEDGE_CHUNK_SIZE || "1200");
+  return Number.isFinite(value) && value >= 400 ? value : 1200;
+}
+
+export function getKnowledgeChunkOverlap() {
+  const value = Number(process.env.KNOWLEDGE_CHUNK_OVERLAP || "180");
+  return Number.isFinite(value) && value >= 0 ? value : 180;
+}
+
+export function getKnowledgeRetrievalLimit() {
+  const value = Number(process.env.KNOWLEDGE_RETRIEVAL_LIMIT || "5");
+  return Number.isFinite(value) && value >= 1 ? Math.min(value, 8) : 5;
+}
+

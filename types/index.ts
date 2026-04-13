@@ -20,6 +20,11 @@ export interface MockUser {
 }
 
 export type PaymentIssueType = "failed_payment" | "duplicate_charge" | "payment_not_reflected" | "receipt_request";
+export type KnowledgeSourceType = "url" | "document";
+export type KnowledgeSourceStatus = "draft" | "ready" | "syncing" | "error" | "archived";
+export type KnowledgeVisibility = "public" | "internal";
+export type KnowledgeSyncStatus = "pending" | "running" | "success" | "error";
+export type ChatConfidence = "high" | "medium" | "low";
 
 export interface PaymentHelpFormData {
   issueType: PaymentIssueType;
@@ -58,6 +63,28 @@ export interface ToolResult {
   status: "success" | "error" | "pending";
 }
 
+export interface SourceReference {
+  id: string;
+  title: string;
+  label: string;
+  href?: string;
+  sourceType: KnowledgeSourceType | "faq";
+}
+
+export interface RetrievalMatch {
+  chunkId: string;
+  sourceId: string;
+  sourceTitle: string;
+  sourceType: KnowledgeSourceType;
+  sourceUrl?: string;
+  sourceLabel: string;
+  heading?: string;
+  content: string;
+  keywordScore: number;
+  similarityScore: number;
+  combinedScore: number;
+}
+
 export interface Message {
   id: string;
   role: MessageRole;
@@ -67,6 +94,9 @@ export interface Message {
   toolResults?: ToolResult[];
   isStreaming?: boolean;
   rating?: 1 | 2 | 3 | 4 | 5;
+  sources?: SourceReference[];
+  grounded?: boolean;
+  confidence?: ChatConfidence;
 }
 
 export interface AgentCase {
@@ -108,11 +138,50 @@ export interface PersistedSessionRecord {
   agent_case?: Record<string, unknown> | null;
 }
 
+export interface KnowledgeSourceRecord {
+  id: string;
+  source_type: KnowledgeSourceType;
+  title: string;
+  status: KnowledgeSourceStatus;
+  visibility: KnowledgeVisibility;
+  canonical_url?: string | null;
+  file_name?: string | null;
+  file_type?: string | null;
+  checksum?: string | null;
+  chunk_count?: number;
+  last_synced_at?: string | null;
+  last_error?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface KnowledgeDocumentRecord {
+  id: string;
+  source_id: string;
+  checksum: string;
+  raw_text: string;
+  metadata?: Record<string, unknown> | null;
+  created_at: string;
+}
+
+export interface KnowledgeSyncRunRecord {
+  id: string;
+  source_id?: string | null;
+  source_title?: string | null;
+  status: KnowledgeSyncStatus;
+  mode: "single" | "bulk";
+  documents_processed: number;
+  chunks_created: number;
+  error_message?: string | null;
+  started_at: string;
+  completed_at?: string | null;
+}
+
 export type StreamEvent =
   | { type: "tool_start"; toolName: string; toolCallId: string; input: Record<string, unknown> }
   | { type: "tool_done"; toolCallId: string; name: string; result: unknown; status: "success" | "error" }
   | { type: "text_delta"; delta: string }
-  | { type: "done"; toolResults: ToolResult[] }
+  | { type: "done"; toolResults: ToolResult[]; sources?: SourceReference[]; grounded?: boolean; confidence?: ChatConfidence }
   | { type: "error"; message: string };
 
 export interface ChatRequest {
@@ -123,6 +192,9 @@ export interface ChatResponse {
   message: string;
   toolCalls?: ToolCall[];
   toolResults?: ToolResult[];
+  sources?: SourceReference[];
+  grounded?: boolean;
+  confidence?: ChatConfidence;
 }
 
 export type ToolName =
@@ -181,3 +253,4 @@ export interface ConnectHumanInput {
   priority: "low" | "medium" | "high" | "urgent";
   summary: string;
 }
+

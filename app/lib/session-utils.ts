@@ -143,15 +143,20 @@ export function reviveSession(session: ChatSession | PersistedSessionRecord): Ch
   };
 }
 
+function toIsoString(value: Date | string | undefined) {
+  if (!value) return undefined;
+  return value instanceof Date ? value.toISOString() : new Date(value).toISOString();
+}
+
 export function serializeSession(session: ChatSession): PersistedSessionRecord {
   return {
     id: session.id,
     title: session.title,
-    created_at: session.createdAt.toISOString(),
-    updated_at: session.updatedAt.toISOString(),
+    created_at: toIsoString(session.createdAt)!,
+    updated_at: toIsoString(session.updatedAt)!,
     messages: session.messages.map((message) => ({
       ...message,
-      timestamp: message.timestamp.toISOString(),
+      timestamp: toIsoString(message.timestamp)!,
     })),
     satisfaction: session.satisfaction ?? null,
     owner_user_id: session.ownerUserId ?? null,
@@ -159,9 +164,9 @@ export function serializeSession(session: ChatSession): PersistedSessionRecord {
     agent_case: session.agentCase
       ? {
           ...session.agentCase,
-          firstResponseAt: session.agentCase.firstResponseAt?.toISOString(),
-          resolvedAt: session.agentCase.resolvedAt?.toISOString(),
-          lastUpdated: session.agentCase.lastUpdated.toISOString(),
+          firstResponseAt: toIsoString(session.agentCase.firstResponseAt),
+          resolvedAt: toIsoString(session.agentCase.resolvedAt),
+          lastUpdated: toIsoString(session.agentCase.lastUpdated)!,
         }
       : null,
   };

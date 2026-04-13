@@ -206,8 +206,38 @@ function isDesktopViewport() {
   return typeof window !== "undefined" && window.innerWidth >= 1024;
 }
 
+function isWelcomeMessageRecord(message: Message) {
+  return message.role === "assistant" && message.content === WELCOME_MESSAGE.content;
+}
+
+function formatGuideMessage(guide: NonNullable<QuickAction["guide"]>) {
+  const steps = guide.steps.map((step, index) => `${index + 1}. ${step}`).join("\n");
+  const checks = guide.checks?.length
+    ? `\n\nHave these ready:\n${guide.checks.map((check) => `- ${check}`).join("\n")}`
+    : "";
+
+  return `**${guide.title}**${guide.context ? `\n\n${guide.context}` : ""}\n\n${steps}${checks}`;
+}
+
+function formatPaymentSupportMessage(payload: PaymentHelpFormData, verification?: PaymentVerificationResult) {
+  const details = [
+    `Payment support flow started.`,
+    `- Issue type: ${PAYMENT_ISSUE_LABELS[payload.issueType]}`,
+    `- Learner ID: ${payload.learnerId}`,
+    `- Invoice ID: ${payload.invoiceId}`,
+    `- Payment reference: ${payload.paymentReference}`,
+  ];
+
+  if (verification) {
+    details.push(`- Verified status: ${verification.status}`);
+    details.push(`- Verified amount: INR ${verification.amount}`);
+  }
+
+  return details.join("\n");
+}
+
 export function SupportWorkspace({ mode, onClose }: Props) {
-  const { sessions, activeSession, activeId, createSession, updateSession, deleteSession, switchSession, rateMessage } = useSessions();
+  const { sessions, activeSession, activeId, createSession, updateSession, switchSession, rateMessage } = useSessions();
   const [messages, setMessages] = useState<Message[]>([WELCOME_MESSAGE]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -221,10 +251,47 @@ export function SupportWorkspace({ mode, onClose }: Props) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const syncedSessionIdRef = useRef<string | null>(null);
+  const messagesRef = useRef<Message[]>([WELCOME_MESSAGE]);
+  const activeIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
+  useEffect(() => {
+    activeIdRef.current = activeId;
+  }, [activeId]);
+
+  const appendTranscriptMessages = useCallback(
+    (newMessages: Message[]) => {
+      if (newMessages.length === 0) return null;
+
+      const currentActiveId = activeIdRef.current;
+      if (!currentActiveId) {
+        const initialMessages = [WELCOME_MESSAGE, ...newMessages];
+        const session = createSession(initialMessages);
+        syncedSessionIdRef.current = session.id;
+        activeIdRef.current = session.id;
+        messagesRef.current = initialMessages;
+        setMessages(initialMessages);
+        return session.id;
+      }
+
+      const nextMessages = [...messagesRef.current, ...newMessages];
+      messagesRef.current = nextMessages;
+      setMessages(nextMessages);
+      updateSession(currentActiveId, nextMessages);
+      return currentActiveId;
+    },
+    [createSession, updateSession]
+  );
+
 
   useEffect(() => {
     if (!activeId) {
       syncedSessionIdRef.current = null;
+      activeIdRef.current = null;
+      messagesRef.current = [WELCOME_MESSAGE];
       setMessages([WELCOME_MESSAGE]);
       return;
     }
@@ -234,21 +301,23 @@ export function SupportWorkspace({ mode, onClose }: Props) {
     }
 
     syncedSessionIdRef.current = activeId;
-    setMessages(activeSession.messages.length > 0 ? activeSession.messages : [WELCOME_MESSAGE]);
+    activeIdRef.current = activeId;
+    const nextMessages = activeSession.messages.length > 0 ? activeSession.messages : [WELCOME_MESSAGE];
+    messagesRef.current = nextMessages;
+    setMessages(nextMessages);
   }, [activeId, activeSession]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, liveTools, activeGuide, showPaymentHelp]);
 
-  useEffect(() => {
-    if (!activeId || messages.length <= 1) return;
-    updateSession(activeId, messages);
-  }, [activeId, messages, updateSession]);
-
   const startNewSession = useCallback(() => {
-    const session = createSession([WELCOME_MESSAGE]);
-    setMessages([{ ...WELCOME_MESSAGE, id: generateId() }]);
+    const initialMessages = [WELCOME_MESSAGE];
+    const session = createSession(initialMessages);
+    syncedSessionIdRef.current = session.id;
+    activeIdRef.current = session.id;
+    messagesRef.current = initialMessages;
+    setMessages(initialMessages);
     setInput("");
     setLiveTools([]);
     setStreamingId(null);
@@ -269,13 +338,21 @@ export function SupportWorkspace({ mode, onClose }: Props) {
   };
 
   const sendMessage = useCallback(
-    async (text: string) => {
+    async (text: string, sessionOverrideId?: string, baseMessagesOverride?: Message[]) => {
       if (!text.trim() || isLoading) return;
 
-      let sessionId = activeId;
+      let sessionId = sessionOverrideId ?? activeIdRef.current;
+      let baseMessages = baseMessagesOverride ?? messagesRef.current;
+
       if (!sessionId) {
-        const session = createSession([WELCOME_MESSAGE]);
+        const initialMessages = baseMessages.length > 0 ? baseMessages : [WELCOME_MESSAGE];
+        const session = createSession(initialMessages);
         sessionId = session.id;
+        syncedSessionIdRef.current = session.id;
+        activeIdRef.current = session.id;
+        messagesRef.current = initialMessages;
+        setMessages(initialMessages);
+        baseMessages = initialMessages;
       }
 
       const userMsg: Message = {
@@ -293,7 +370,10 @@ export function SupportWorkspace({ mode, onClose }: Props) {
         isStreaming: true,
       };
 
-      setMessages((prev) => [...prev, userMsg, assistantMsg]);
+      const pendingMessages = [...baseMessages, userMsg, assistantMsg];
+      messagesRef.current = pendingMessages;
+      setMessages(pendingMessages);
+      updateSession(sessionId, pendingMessages);
       setStreamingId(assistantId);
       setInput("");
       setIsLoading(true);
@@ -303,9 +383,9 @@ export function SupportWorkspace({ mode, onClose }: Props) {
         textareaRef.current.style.height = "auto";
       }
 
-      const history = [...messages.filter((message) => message.id !== "welcome" && !message.isStreaming), userMsg].map(
-        (message) => ({ role: message.role as "user" | "assistant", content: message.content })
-      );
+      const history = pendingMessages
+        .filter((message) => !message.isStreaming && !isWelcomeMessageRecord(message) && message.role !== "system")
+        .map((message) => ({ role: message.role as "user" | "assistant", content: message.content }));
 
       try {
         const response = await fetch("/api/chat", {
@@ -322,6 +402,9 @@ export function SupportWorkspace({ mode, onClose }: Props) {
         let buffer = "";
         let accumulatedText = "";
         let finalToolResults: ToolResult[] = [];
+        let finalSources = undefined as Message["sources"] | undefined;
+        let finalGrounded = undefined as Message["grounded"] | undefined;
+        let finalConfidence = undefined as Message["confidence"] | undefined;
 
         while (true) {
           const { value, done } = await reader.read();
@@ -337,13 +420,22 @@ export function SupportWorkspace({ mode, onClose }: Props) {
               const event = JSON.parse(line.slice(6)) as StreamEvent;
               if (event.type === "text_delta") {
                 accumulatedText += event.delta;
-                setMessages((prev) => prev.map((message) => (message.id === assistantId ? { ...message, content: accumulatedText } : message)));
+                setMessages((prev) => {
+                  const nextMessages = prev.map((message) =>
+                    message.id === assistantId ? { ...message, content: accumulatedText } : message
+                  );
+                  messagesRef.current = nextMessages;
+                  return nextMessages;
+                });
               } else if (event.type === "tool_start") {
                 setLiveTools((prev) => [...prev, { toolCallId: event.toolCallId, name: event.toolName, status: "running" }]);
               } else if (event.type === "tool_done") {
                 setLiveTools((prev) => prev.map((tool) => (tool.toolCallId === event.toolCallId ? { ...tool, status: event.status } : tool)));
               } else if (event.type === "done") {
                 finalToolResults = event.toolResults as ToolResult[];
+                finalSources = event.sources;
+                finalGrounded = event.grounded;
+                finalConfidence = event.confidence;
               } else if (event.type === "error") {
                 throw new Error(event.message);
               }
@@ -353,22 +445,28 @@ export function SupportWorkspace({ mode, onClose }: Props) {
           }
         }
 
-        setMessages((prev) =>
-          prev.map((message) =>
+        setMessages((prev) => {
+          const nextMessages = prev.map((message) =>
             message.id === assistantId
               ? {
                   ...message,
                   content: accumulatedText || "I am sorry, I could not process that request.",
                   toolResults: finalToolResults,
+                  sources: finalSources,
+                  grounded: finalGrounded,
+                  confidence: finalConfidence,
                   isStreaming: false,
                 }
               : message
-          )
-        );
+          );
+          messagesRef.current = nextMessages;
+          updateSession(sessionId, nextMessages);
+          return nextMessages;
+        });
         setTimeout(() => setLiveTools([]), 1200);
       } catch {
-        setMessages((prev) =>
-          prev.map((message) =>
+        setMessages((prev) => {
+          const nextMessages = prev.map((message) =>
             message.id === assistantId
               ? {
                   ...message,
@@ -376,15 +474,18 @@ export function SupportWorkspace({ mode, onClose }: Props) {
                   isStreaming: false,
                 }
               : message
-          )
-        );
+          );
+          messagesRef.current = nextMessages;
+          updateSession(sessionId, nextMessages);
+          return nextMessages;
+        });
         setLiveTools([]);
       } finally {
         setIsLoading(false);
         setStreamingId(null);
       }
     },
-    [messages, isLoading, activeId, createSession]
+    [createSession, isLoading, updateSession]
   );
 
   const showFaqChips = useMemo(() => {
@@ -393,18 +494,56 @@ export function SupportWorkspace({ mode, onClose }: Props) {
   }, [messages]);
 
   const handleAction = (action: QuickAction) => {
-    if (action.category === "fees") {
+    const selectedTopicMessage: Message = {
+      id: generateId(),
+      role: "user",
+      content: `Selected popular help topic: ${action.label}`,
+      timestamp: new Date(),
+    };
+
+    const guideMessage = action.guide
+      ? {
+          id: generateId(),
+          role: "assistant" as const,
+          content: formatGuideMessage(action.guide),
+          timestamp: new Date(),
+        }
+      : null;
+
+    const currentActiveId = activeIdRef.current;
+    const currentMessages = messagesRef.current;
+    const nextMessages = guideMessage
+      ? [...currentMessages, selectedTopicMessage, guideMessage]
+      : [...currentMessages, selectedTopicMessage];
+
+    let sessionIdForFollowup = currentActiveId;
+    if (!currentActiveId) {
+      const session = createSession(nextMessages);
+      sessionIdForFollowup = session.id;
+      syncedSessionIdRef.current = session.id;
+      activeIdRef.current = session.id;
+    } else {
+      updateSession(currentActiveId, nextMessages);
+    }
+
+    messagesRef.current = nextMessages;
+    setMessages(nextMessages);
+
+    if (action.guide) {
+      setActiveGuide(action.guide);
+    } else {
       setActiveGuide(null);
+    }
+
+    if (action.category === "fees") {
       setShowPaymentHelp(true);
       return;
     }
 
     setShowPaymentHelp(false);
-    if (action.guide) {
-      setActiveGuide(action.guide);
-      return;
+    if (!action.guide) {
+      void sendMessage(action.prompt, sessionIdForFollowup ?? undefined, nextMessages);
     }
-    void sendMessage(action.prompt);
   };
 
   const handleSubmit = (event: React.FormEvent) => {
@@ -412,6 +551,13 @@ export function SupportWorkspace({ mode, onClose }: Props) {
     void sendMessage(input);
   };
   const handleGuideAction = (action: GuideAction) => {
+    const actionMessage: Message = {
+      id: generateId(),
+      role: "user",
+      content: `Selected guide action: ${action.label}`,
+      timestamp: new Date(),
+    };
+
     if (action.behavior === "resolve") {
       const confirmationMessage: Message = {
         id: generateId(),
@@ -419,18 +565,35 @@ export function SupportWorkspace({ mode, onClose }: Props) {
         content: action.confirmation ?? "Happy to hear that solved it.",
         timestamp: new Date(),
       };
-      setMessages((prev) => [...prev, confirmationMessage]);
+      appendTranscriptMessages([actionMessage, confirmationMessage]);
       setActiveGuide(null);
       return;
     }
 
     if (action.prompt) {
+      const sessionId = appendTranscriptMessages([actionMessage]);
+      const baseMessages = [...messagesRef.current];
       setActiveGuide(null);
-      void sendMessage(action.prompt);
+      void sendMessage(action.prompt, sessionId ?? undefined, baseMessages);
     }
   };
 
   const handlePaymentHelpVerify = async (payload: PaymentHelpFormData) => {
+    appendTranscriptMessages([
+      {
+        id: generateId(),
+        role: "user",
+        content: formatPaymentSupportMessage(payload),
+        timestamp: new Date(),
+      },
+      {
+        id: generateId(),
+        role: "assistant",
+        content: "I am verifying the payment details you entered now.",
+        timestamp: new Date(),
+      },
+    ]);
+
     const response = await fetch("/api/payment-help", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -446,6 +609,15 @@ export function SupportWorkspace({ mode, onClose }: Props) {
     if (!result.verification) {
       throw new Error("Missing verification result");
     }
+
+    appendTranscriptMessages([
+      {
+        id: generateId(),
+        role: "assistant",
+        content: formatPaymentSupportMessage(payload, result.verification),
+        timestamp: new Date(),
+      },
+    ]);
 
     return result.verification;
   };
@@ -470,13 +642,20 @@ export function SupportWorkspace({ mode, onClose }: Props) {
       timestamp: new Date(),
     };
 
-    let sessionId = activeId;
+    let sessionId = activeIdRef.current;
     if (!sessionId) {
-      const session = createSession([WELCOME_MESSAGE, userMessage]);
+      const sessionMessages = [WELCOME_MESSAGE, userMessage];
+      const session = createSession(sessionMessages);
       sessionId = session.id;
-      setMessages([WELCOME_MESSAGE, userMessage]);
+      syncedSessionIdRef.current = session.id;
+      activeIdRef.current = session.id;
+      messagesRef.current = sessionMessages;
+      setMessages(sessionMessages);
     } else {
-      setMessages((prev) => [...prev, userMessage]);
+      const nextMessages = [...messagesRef.current, userMessage];
+      messagesRef.current = nextMessages;
+      setMessages(nextMessages);
+      updateSession(sessionId, nextMessages);
     }
 
     setShowPaymentHelp(false);
@@ -504,7 +683,14 @@ Note: I saved this in demo mode because live payment storage is not available ri
           : (result.message ?? "Your payment request has been logged and shared with learner finance support."),
         timestamp: new Date(),
       };
-      setMessages((prev) => [...prev, assistantMessage]);
+      setMessages((prev) => {
+        const nextMessages = [...prev, assistantMessage];
+        messagesRef.current = nextMessages;
+        if (sessionId) {
+          updateSession(sessionId, nextMessages);
+        }
+        return nextMessages;
+      });
     } catch {
       const fallbackMessage: Message = {
         id: generateId(),
@@ -513,7 +699,14 @@ Note: I saved this in demo mode because live payment storage is not available ri
           "I logged your payment request in the demo support flow. A finance specialist should review the verified invoice and payment reference shortly.",
         timestamp: new Date(),
       };
-      setMessages((prev) => [...prev, fallbackMessage]);
+      setMessages((prev) => {
+        const nextMessages = [...prev, fallbackMessage];
+        messagesRef.current = nextMessages;
+        if (sessionId) {
+          updateSession(sessionId, nextMessages);
+        }
+        return nextMessages;
+      });
     } finally {
       setIsSubmittingPayment(false);
     }
@@ -539,10 +732,6 @@ Note: I saved this in demo mode because live payment storage is not available ri
                 sessions={sessions}
                 activeId={activeId}
                 onSwitch={handleSwitchSession}
-                onDelete={(id) => {
-                  deleteSession(id);
-                  if (id === activeId) setMessages([WELCOME_MESSAGE]);
-                }}
                 onNew={startNewSession}
               />
             </div>
@@ -579,19 +768,20 @@ Note: I saved this in demo mode because live payment storage is not available ri
                   <span className="hidden sm:block">Helping learner...</span>
                 </div>
               )}
-              <AuthStatus compact />
+              
               <button
                 type="button"
                 onClick={startNewSession}
-                className="flex-1 rounded-xl border border-border bg-card px-3 py-2 text-xs text-subtle transition-all hover:border-accent/30 hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 sm:flex-none"
+                className="flex-1 rounded-xl border border-border cursor-pointer bg-card px-3 py-2 text-xs text-subtle transition-all hover:border-accent/30 hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 sm:flex-none"
               >
                 New request
               </button>
+              <AuthStatus compact />
               {onClose && (
                 <button
                   type="button"
                   onClick={onClose}
-                  className="rounded-lg border border-border bg-card p-2 text-subtle transition-all hover:border-accent/30 hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+                  className="rounded-lg border border-border bg-card p-2 text-subtle cursor-pointer transition-all hover:border-accent/30 hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
                 >
                   <X size={14} />
                 </button>
@@ -605,98 +795,99 @@ Note: I saved this in demo mode because live payment storage is not available ri
           <div className="flex min-w-0 flex-1 flex-col">
             <div className="flex-1 overflow-y-auto px-3 py-4 sm:px-4 md:px-6 md:py-6">
               <div className={`mx-auto space-y-4 sm:space-y-5 ${mode === "page" ? "max-w-4xl" : "max-w-none"}`}>
-                {showFaqChips && (
-                  <div className="rounded-2xl border border-border bg-surface/70 p-4 shadow-sm">
-                    <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-subtle">Popular help topics</p>
-                    <div className="flex flex-wrap gap-2">
-                      {QUICK_ACTIONS.map((action) => (
-                        <button
-                          key={action.label}
-                          type="button"
-                          onClick={() => handleAction(action)}
-                          className="rounded-full border border-border bg-card px-3 py-2 text-xs text-subtle transition-all hover:border-accent/30 hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
-                        >
-                          {action.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                {messages.map((message, index) => (
+                  <div key={message.id} className="space-y-4 sm:space-y-5">
+                    <MessageBubble
+                      message={message}
+                      liveTools={message.id === streamingId ? liveTools : []}
+                      onRate={
+                        message.role === "assistant" && !message.isStreaming && message.id !== "welcome"
+                          ? (rating) => rateMessage(activeId ?? "", message.id, rating)
+                          : undefined
+                      }
+                    />
 
-                {showPaymentHelp && (
-                  <PaymentHelpCard
-                    isSubmitting={isSubmittingPayment}
-                    onCancel={() => setShowPaymentHelp(false)}
-                    onVerify={handlePaymentHelpVerify}
-                    onSubmit={(payload, verification) => void handlePaymentHelpSubmit(payload, verification)}
-                  />
-                )}
-
-                {activeGuide && !showPaymentHelp && (
-                  <div className="rounded-2xl border border-accent/20 bg-accent/5 p-4 shadow-sm">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-text sm:text-base">{activeGuide.title}</p>
-                        {activeGuide.context && <p className="mt-2 text-sm leading-relaxed text-subtle">{activeGuide.context}</p>}
-                        <ol className="mt-3 space-y-2 text-sm text-subtle">
-                          {activeGuide.steps.map((step, index) => (
-                            <li key={step} className="flex gap-2">
-                              <span className="text-accent-light">{index + 1}.</span>
-                              <span>{step}</span>
-                            </li>
+                    {index === 0 && showFaqChips && (
+                      <div className="rounded-2xl border border-border bg-surface/70 p-4 shadow-sm">
+                        <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-subtle">Popular help topics</p>
+                        <div className="flex flex-wrap gap-2">
+                          {QUICK_ACTIONS.map((action) => (
+                            <button
+                              key={action.label}
+                              type="button"
+                              onClick={() => handleAction(action)}
+                              className="rounded-full border border-border bg-card px-3 py-2 text-xs text-subtle transition-all hover:border-accent/30 hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+                            >
+                              {action.label}
+                            </button>
                           ))}
-                        </ol>
-                        {activeGuide.checks && activeGuide.checks.length > 0 && (
-                          <div className="mt-4 rounded-xl border border-border/60 bg-card/70 p-3">
-                            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-subtle">Have these ready</p>
-                            <ul className="mt-2 space-y-1 text-sm text-subtle">
-                              {activeGuide.checks.map((check) => (
-                                <li key={check} className="flex gap-2">
-                                  <span className="text-accent-light">-</span>
-                                  <span>{check}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {index === 0 && showPaymentHelp && (
+                      <PaymentHelpCard
+                        isSubmitting={isSubmittingPayment}
+                        onCancel={() => setShowPaymentHelp(false)}
+                        onVerify={handlePaymentHelpVerify}
+                        onSubmit={(payload, verification) => void handlePaymentHelpSubmit(payload, verification)}
+                      />
+                    )}
+
+                    {index === 0 && activeGuide && !showPaymentHelp && (
+                      <div className="rounded-2xl border border-accent/20 bg-accent/5 p-4 shadow-sm">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-text sm:text-base">{activeGuide.title}</p>
+                            {activeGuide.context && <p className="mt-2 text-sm leading-relaxed text-subtle">{activeGuide.context}</p>}
+                            <ol className="mt-3 space-y-2 text-sm text-subtle">
+                              {activeGuide.steps.map((step, index) => (
+                                <li key={step} className="flex gap-2">
+                                  <span className="text-accent-light">{index + 1}.</span>
+                                  <span>{step}</span>
                                 </li>
                               ))}
-                            </ul>
+                            </ol>
+                            {activeGuide.checks && activeGuide.checks.length > 0 && (
+                              <div className="mt-4 rounded-xl border border-border/60 bg-card/70 p-3">
+                                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-subtle">Have these ready</p>
+                                <ul className="mt-2 space-y-1 text-sm text-subtle">
+                                  {activeGuide.checks.map((check) => (
+                                    <li key={check} className="flex gap-2">
+                                      <span className="text-accent-light">-</span>
+                                      <span>{check}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
                           </div>
-                        )}
+                          <button
+                            type="button"
+                            onClick={() => setActiveGuide(null)}
+                            className="rounded-lg p-1 text-subtle transition-colors hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                          {activeGuide.actions.map((action) => (
+                            <button
+                              key={action.label}
+                              type="button"
+                              onClick={() => handleGuideAction(action)}
+                              className={action.tone === "primary"
+                                ? "w-full rounded-xl bg-success px-4 py-2 text-sm text-white transition-all hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success/60 sm:w-auto"
+                                : "w-full rounded-xl border border-border bg-card px-4 py-2 text-sm text-text transition-all hover:border-accent/30 hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 sm:w-auto"
+                              }
+                            >
+                              {action.label}
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => setActiveGuide(null)}
-                        className="rounded-lg p-1 text-subtle transition-colors hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-                    <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                      {activeGuide.actions.map((action) => (
-                        <button
-                          key={action.label}
-                          type="button"
-                          onClick={() => handleGuideAction(action)}
-                          className={action.tone === "primary"
-                            ? "w-full rounded-xl bg-success px-4 py-2 text-sm text-white transition-all hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success/60 sm:w-auto"
-                            : "w-full rounded-xl border border-border bg-card px-4 py-2 text-sm text-text transition-all hover:border-accent/30 hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 sm:w-auto"
-                          }
-                        >
-                          {action.label}
-                        </button>
-                      ))}
-                    </div>
+                    )}
                   </div>
-                )}
-
-                {messages.map((message) => (
-                  <MessageBubble
-                    key={message.id}
-                    message={message}
-                    liveTools={message.id === streamingId ? liveTools : []}
-                    onRate={
-                      message.role === "assistant" && !message.isStreaming && message.id !== "welcome"
-                        ? (rating) => rateMessage(activeId ?? "", message.id, rating)
-                        : undefined
-                    }
-                  />
                 ))}
                 <div ref={bottomRef} />
               </div>
@@ -756,3 +947,7 @@ Note: I saved this in demo mode because live payment storage is not available ri
     </div>
   );
 }
+
+
+
+

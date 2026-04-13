@@ -2,10 +2,26 @@
 import { generateText, stepCountIs, tool, type ModelMessage } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
+import { getGenerationModel, getKnowledgeRetrievalLimit } from "@/app/lib/env";
+import {
+  buildGroundingSummary,
+  maybeBuildFaqResponse,
+  retrieveKnowledge,
+} from "@/app/lib/knowledge";
 import { rateLimit } from "@/app/lib/rate-limit";
 import { executeTool } from "../../lib/tools";
+import type { SourceReference } from "@/types";
 
 const SYSTEM_PROMPT = `You are Nova, an AI support assistant for skl8, a training center that supports learners across enrollment, course access, schedules, certificates, and fee issues.
+
+## Core rules
+- Prefer supplied support knowledge evidence, the visible conversation, and tool results you obtained during this request.
+- If verified support evidence is weak or missing, you may still use general model knowledge for broad troubleshooting or common-sense guidance, but clearly avoid presenting it as a confirmed skl8 policy or database fact.
+- Never invent skl8-specific policies, timelines, fees, schedules, or guarantees unless they are grounded in the retrieved evidence or tool results.
+- If a tool result shows found false, not_found true, or a message saying the record does not exist, tell the learner clearly that the record was not found in Supabase and ask them to re-check the exact ID, email, invoice, batch, or application reference.
+- Keep answers warm, concise, and action-oriented.
+- When support evidence is provided, cite the relevant source titles naturally in the answer.
+- Distinguish between verified skl8 information and general guidance whenever that difference matters.
 
 ## Primary responsibilities
 - Help learners solve common issues quickly with accurate, student-friendly guidance.
@@ -13,24 +29,12 @@ const SYSTEM_PROMPT = `You are Nova, an AI support assistant for skl8, a trainin
 - Use tools proactively when learner data, payment status, schedules, certificates, or enrollment details are needed.
 - Escalate to a human support specialist when policy judgment, finance review, exceptions, or repeated failed troubleshooting are involved.
 
-## Supported issue categories
-- Login or LMS access
-- Course access or missing content
-- Batch schedule and session timings
-- Fees, invoices, receipts, and payment issues
-- Enrollment or admission status
-- Certificates and completion letters
-
 ## Response style
-- Be warm, concise, and reassuring.
-- After a simple greeting, suggest likely help topics naturally.
 - Ask for student ID, registered email, batch, invoice ID, or application ID only when truly needed.
 - Explain what you are checking before using a tool.
 - Summarize outcomes clearly and mention next steps.
 - For payment and certificate issues, confirm the relevant reference details before acting.
-- Escalate if the learner is frustrated, blocked after guided troubleshooting, facing a deadline, or requests a human.
-
-Today's date: April 9, 2026.`;
+- Escalate if the learner is frustrated, blocked after guided troubleshooting, facing a deadline, or requests a human.`;
 
 function encode(event: object): string {
   return `data: ${JSON.stringify(event)}\n\n`;
@@ -140,6 +144,29 @@ function getClientAddress(request: NextRequest) {
   );
 }
 
+function latestUserMessage(messages: Array<{ role: "user" | "assistant" | "system"; content: string }>) {
+  return [...messages].reverse().find((message) => message.role === "user")?.content.trim() || "";
+}
+
+function buildKnowledgeContext(matches: ReturnType<typeof buildGroundingSummary>, rawMatches: Awaited<ReturnType<typeof retrieveKnowledge>>) {
+  if (!matches.grounded) {
+    return "No verified knowledge evidence was retrieved for this question.";
+  }
+
+  const capped = rawMatches.slice(0, getKnowledgeRetrievalLimit());
+  return capped
+    .map((match, index) => {
+      const title = match.sourceTitle;
+      const heading = match.heading ? ` / ${match.heading}` : "";
+      return `[${index + 1}] ${title}${heading}\n${match.content}`;
+    })
+    .join("\n\n");
+}
+
+function isShortFaqCandidate(query: string) {
+  return query.length <= 220 && !/[0-9]{3,}/.test(query);
+}
+
 export async function POST(req: NextRequest) {
   const limiter = await rateLimit(`chat:${getClientAddress(req)}`, 30, 60);
   if (!limiter.allowed) {
@@ -153,14 +180,37 @@ export async function POST(req: NextRequest) {
   }
 
   const { messages } = await req.json();
+  const latestUser = latestUserMessage(messages);
 
   const stream = new ReadableStream({
     async start(controller) {
+      let closed = false;
+      const close = () => {
+        if (closed) return;
+        closed = true;
+        controller.close();
+      };
       const send = (event: object) => {
+        if (closed) return;
         controller.enqueue(new TextEncoder().encode(encode(event)));
       };
 
       try {
+        const faqResponse = isShortFaqCandidate(latestUser) ? maybeBuildFaqResponse(latestUser) : null;
+        if (faqResponse) {
+          const words = faqResponse.message.split(/(\s+)/);
+          for (const word of words) {
+            send({ type: "text_delta", delta: word });
+          }
+          send({ type: "done", toolResults: [], sources: faqResponse.sources, grounded: true, confidence: faqResponse.confidence });
+          close();
+          return;
+        }
+
+        const matches = await retrieveKnowledge(latestUser);
+        const grounding = buildGroundingSummary(matches);
+        const contextBlock = buildKnowledgeContext(grounding, matches);
+
         const allToolResults: Array<{
           toolCallId: string;
           name: string;
@@ -169,18 +219,18 @@ export async function POST(req: NextRequest) {
         }> = [];
 
         await generateText({
-          model: openai("gpt-4.1"),
-          system: SYSTEM_PROMPT,
+          model: openai(getGenerationModel()),
+          system: `${SYSTEM_PROMPT}\n\n## Retrieved support knowledge\n${contextBlock}`,
           messages: toModelMessages(messages),
           tools: createTools(send),
-          stopWhen: stepCountIs(10),
+          stopWhen: stepCountIs(8),
           onStepFinish: async ({ text, toolResults }) => {
             if (text) {
               const words = text.split(/(\s+)/);
               for (let index = 0; index < words.length; index++) {
                 send({ type: "text_delta", delta: words[index] });
                 if (index < words.length - 1) {
-                  await new Promise((resolve) => setTimeout(resolve, 18));
+                  await new Promise((resolve) => setTimeout(resolve, 16));
                 }
               }
             }
@@ -196,11 +246,17 @@ export async function POST(req: NextRequest) {
           },
         });
 
-        send({ type: "done", toolResults: allToolResults });
+        send({
+          type: "done",
+          toolResults: allToolResults,
+          sources: grounding.sources as SourceReference[],
+          grounded: grounding.grounded,
+          confidence: grounding.confidence,
+        });
       } catch (error) {
         send({ type: "error", message: String(error) });
       } finally {
-        controller.close();
+        close();
       }
     },
   });
@@ -215,3 +271,4 @@ export async function POST(req: NextRequest) {
     },
   });
 }
+

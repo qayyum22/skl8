@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { isSupabaseConfigured } from "@/app/lib/env";
 import { createSupabaseBrowserClient } from "@/app/lib/supabase/browser";
+import { flushPendingSessionWrites } from "./useSessions";
 import type { AppRole, MockUser } from "@/types";
 
 const STORAGE_KEY = "nova_mock_user";
@@ -231,6 +232,7 @@ export function useAppAuth(): AuthState {
 
     setAuthBusy(true);
     try {
+      await flushPendingSessionWrites();
       const supabase = createSupabaseBrowserClient();
       await supabase.auth.signOut();
       const demoUser = loadDemoUser();

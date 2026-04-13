@@ -1,11 +1,13 @@
 ﻿"use client";
 
-import { AlertTriangle, BarChart3, CheckCircle2, Clock3, ShieldAlert, Star, Users } from "lucide-react";
-import { useMemo } from "react";
+import { AlertTriangle, BarChart3, CheckCircle2, Clock3, ShieldAlert, Star, Users, X } from "lucide-react";
+import { useMemo, useState } from "react";
 import { useSessions } from "@/hooks/useSessions";
-import type { SupportCategory } from "@/types";
+import type { ChatSession, SupportCategory } from "@/types";
 import { AuthStatus } from "./AuthStatus";
 import { DatabaseOperationsPanel } from "./DatabaseOperationsPanel";
+import { KnowledgeOperationsPanel } from "./KnowledgeOperationsPanel";
+import { MessageBubble } from "./MessageBubble";
 
 function average(values: number[]) {
   if (values.length === 0) return 0;
@@ -27,7 +29,10 @@ const CATEGORY_LABELS: Record<SupportCategory, string> = {
 };
 
 export function AdminDashboard() {
-  const { sessions, refreshSessions } = useSessions();
+  const { sessions, refreshSessions } = useSessions({ pollIntervalMs: 5000 });
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+
+  const selectedSession = useMemo<ChatSession | null>(() => sessions.find((session) => session.id === selectedSessionId) ?? null, [selectedSessionId, sessions]);
 
   const metrics = useMemo(() => {
     const cases = sessions.filter((session) => session.agentCase);
@@ -57,6 +62,7 @@ export function AdminDashboard() {
     const urgentCases = cases.filter((session) => session.agentCase?.severity === "urgent");
 
     return {
+      totalRequests: sessions.length,
       openQueue: cases.filter((session) => session.agentCase?.status !== "resolved").length,
       escalationRate: cases.length === 0 ? 0 : Math.round((cases.filter((session) => session.agentCase?.escalated).length / cases.length) * 100),
       firstResponse: average(firstResponseMinutes),
@@ -81,7 +87,8 @@ export function AdminDashboard() {
           <AuthStatus />
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-3xl border border-border bg-card p-5 shadow-sm"><div className="flex items-center gap-2 text-subtle"><Users size={16} /><span className="text-xs uppercase tracking-wide">Total requests</span></div><p className="mt-3 text-3xl font-semibold">{metrics.totalRequests}</p></div>
           <div className="rounded-3xl border border-border bg-card p-5 shadow-sm"><div className="flex items-center gap-2 text-subtle"><Clock3 size={16} /><span className="text-xs uppercase tracking-wide">Open queue</span></div><p className="mt-3 text-3xl font-semibold">{metrics.openQueue}</p></div>
           <div className="rounded-3xl border border-border bg-card p-5 shadow-sm"><div className="flex items-center gap-2 text-subtle"><BarChart3 size={16} /><span className="text-xs uppercase tracking-wide">Avg first response</span></div><p className="mt-3 text-3xl font-semibold">{metrics.firstResponse.toFixed(0)} min</p></div>
           <div className="rounded-3xl border border-border bg-card p-5 shadow-sm"><div className="flex items-center gap-2 text-subtle"><CheckCircle2 size={16} /><span className="text-xs uppercase tracking-wide">Avg resolution</span></div><p className="mt-3 text-3xl font-semibold">{metrics.resolutionTime.toFixed(0)} min</p></div>
@@ -91,6 +98,59 @@ export function AdminDashboard() {
         </div>
 
         <DatabaseOperationsPanel sessionCount={sessions.length} onRefreshSessions={refreshSessions} />
+        <KnowledgeOperationsPanel />
+
+        <section className="rounded-3xl border border-border bg-card p-5 shadow-sm">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-lg font-semibold">All requests</h2>
+            {selectedSession && (
+              <button
+                type="button"
+                onClick={() => setSelectedSessionId(null)}
+                className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2 text-sm text-text transition-all hover:border-accent/30 hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+              >
+                <X size={14} />
+                Close request
+              </button>
+            )}
+          </div>
+          <div className="mt-4 grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)]">
+            <div className="space-y-3 xl:max-h-[720px] xl:overflow-y-auto xl:pr-1">
+              {sessions.map((session) => (
+                <button
+                  key={session.id}
+                  type="button"
+                  onClick={() => setSelectedSessionId(session.id)}
+                  className={`w-full rounded-2xl border px-4 py-3 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 ${selectedSession?.id === session.id ? "border-accent/40 bg-card shadow-sm" : "border-border bg-surface/60 hover:border-accent/30 hover:bg-card"}`}
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                    <span className="font-semibold text-text">{session.title}</span>
+                    <span className="text-subtle">{session.agentCase?.status ?? "new"}</span>
+                  </div>
+                  <p className="mt-1 text-sm text-subtle">{session.agentCase?.summary ?? "Learner follow-up needed"}</p>
+                </button>
+              ))}
+              {sessions.length === 0 && <p className="text-sm text-subtle">No requests found.</p>}
+            </div>
+            <div className="rounded-2xl border border-border bg-surface/60 p-4 xl:max-h-[720px] xl:overflow-y-auto">
+              {selectedSession ? (
+                <div className="space-y-4">
+                  <div className="sticky top-0 z-10 -mx-4 -mt-4 border-b border-border bg-surface/95 px-4 py-4 backdrop-blur-sm">
+                    <h3 className="text-base font-semibold text-text">{selectedSession.title}</h3>
+                    <p className="mt-1 text-sm text-subtle">{selectedSession.agentCase?.summary ?? "Learner follow-up needed"}</p>
+                  </div>
+                  <div className="space-y-4 pt-4">
+                    {selectedSession.messages.map((message) => (
+                      <MessageBubble key={message.id} message={message} />
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-subtle">Select a request to view the full conversation.</p>
+              )}
+            </div>
+          </div>
+        </section>
 
         <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
           <section className="rounded-3xl border border-border bg-card p-5 shadow-sm">
@@ -155,3 +215,4 @@ export function AdminDashboard() {
     </div>
   );
 }
+

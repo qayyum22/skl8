@@ -14,12 +14,13 @@ interface Props {
 
 export function AccessGate({ allowedRole, title, description, children }: Props) {
   const { ready, user, switchRole, mode } = useAppAuth();
+  const hasAccess = user.role === allowedRole || (allowedRole === "agent" && user.role === "admin");
 
   if (!ready) {
     return <div className="flex min-h-[50vh] items-center justify-center text-subtle">Loading access...</div>;
   }
 
-  if (user.role !== allowedRole) {
+  if (!hasAccess) {
     return (
       <div className="flex min-h-[70vh] items-center justify-center px-6">
         <div className="max-w-lg rounded-3xl border border-border bg-card p-8 text-center shadow-lg">

@@ -92,9 +92,10 @@ If Supabase is configured and the user is signed in:
 
 1. Create a Supabase project.
 2. Run the SQL in [schema.sql](/E:/skl8/supabase/schema.sql).
-3. Optional but recommended for demos: run the SQL in [seed.sql](/E:/skl8/supabase/seed.sql).
-4. Add the Supabase env vars to `.env.local`.
-5. Restart the dev server.
+3. If your Supabase project predates the RAG update, run [knowledge-rag-patch.sql](/E:/skl8/supabase/knowledge-rag-patch.sql) or re-run the full [schema.sql](/E:/skl8/supabase/schema.sql).
+4. Optional but recommended for demos: run the SQL in [seed.sql](/E:/skl8/supabase/seed.sql).
+5. Add the Supabase env vars to `.env.local`.
+6. Restart the dev server.
 
 ### Seeded demo users
 
@@ -199,3 +200,4 @@ Redis is the right place for future additions like:
 3. Normalize `messages`, `attachments`, `ratings`, and `case_events` into separate tables.
 4. Add Redis-backed presence, queue counters, and live agent state.
 5. Add server-side admin reporting views or materialized views for KPI queries.
+

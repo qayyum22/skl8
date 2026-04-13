@@ -160,6 +160,73 @@ set
   role = excluded.role,
   updated_at = now();
 
+insert into public.learner_profiles (
+  owner_user_id,
+  student_id,
+  email,
+  learner_name,
+  program_name,
+  course_name,
+  batch_id,
+  batch_name,
+  portal_status,
+  current_term,
+  mentor_name,
+  application_id,
+  enrollment_status,
+  start_date,
+  orientation_date,
+  course_access_status,
+  live_class_link_status,
+  next_session,
+  timings,
+  certificate_email
+)
+values
+  (
+    '11111111-1111-1111-1111-111111111111',
+    'SKL8-1042',
+    'ava.learner@skl8.demo',
+    'Ava Learner',
+    'Data Analytics Pro',
+    'Data Analytics Pro',
+    'BATCH-DA-PRO-04',
+    'DA-PRO Weekend Apr 2026',
+    'Active',
+    'Spring 2026',
+    'Riya Menon',
+    'APP-DA-2026-001',
+    'Batch assigned',
+    date '2026-04-22',
+    date '2026-04-19',
+    'Published',
+    'Published',
+    '2026-04-20 19:00 IST - SQL Foundations',
+    'Sat, Sun | 10:00 AM - 1:00 PM',
+    'ava.learner@skl8.demo'
+  )
+on conflict (student_id) do update
+set
+  email = excluded.email,
+  learner_name = excluded.learner_name,
+  program_name = excluded.program_name,
+  course_name = excluded.course_name,
+  batch_id = excluded.batch_id,
+  batch_name = excluded.batch_name,
+  portal_status = excluded.portal_status,
+  current_term = excluded.current_term,
+  mentor_name = excluded.mentor_name,
+  application_id = excluded.application_id,
+  enrollment_status = excluded.enrollment_status,
+  start_date = excluded.start_date,
+  orientation_date = excluded.orientation_date,
+  course_access_status = excluded.course_access_status,
+  live_class_link_status = excluded.live_class_link_status,
+  next_session = excluded.next_session,
+  timings = excluded.timings,
+  certificate_email = excluded.certificate_email,
+  updated_at = now();
+
 -- Demo support cases owned by the learner profile
 insert into public.support_sessions (
   id,
@@ -367,3 +434,65 @@ set
   status = excluded.status,
   next_step = excluded.next_step,
   updated_at = now();
+
+insert into public.certificate_request_records (
+  owner_user_id,
+  student_id,
+  learner_name,
+  program_name,
+  certificate_type,
+  delivery_method,
+  status,
+  turnaround_time,
+  created_at,
+  updated_at
+)
+values
+  (
+    '11111111-1111-1111-1111-111111111111',
+    'SKL8-1042',
+    'Ava Learner',
+    'Data Analytics Pro',
+    'internship',
+    'email',
+    'queued',
+    '2 business days',
+    now() - interval '2 days',
+    now() - interval '2 days'
+  ),
+  (
+    '11111111-1111-1111-1111-111111111111',
+    'SKL8-1042',
+    'Ava Learner',
+    'Data Analytics Pro',
+    'completion',
+    'portal_download',
+    'fulfilled',
+    '2 business days',
+    now() - interval '10 days',
+    now() - interval '8 days'
+  );
+
+insert into public.support_escalations (
+  owner_user_id,
+  reason,
+  priority,
+  summary,
+  assigned_team,
+  estimated_wait,
+  status,
+  created_at,
+  updated_at
+)
+values
+  (
+    '11111111-1111-1111-1111-111111111111',
+    'Learner still blocked after login troubleshooting.',
+    'high',
+    'Portal login still failing after reset and private-window retry.',
+    'Learner success desk',
+    '20 minutes',
+    'open',
+    now() - interval '1 day',
+    now() - interval '1 day'
+  );

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import type {
@@ -17,8 +17,33 @@ import {
   makeTitle,
   reviveSession,
 } from "@/app/lib/session-utils";
+import { createSupabaseBrowserClient } from "@/app/lib/supabase/browser";
+import { useAppAuth } from "./useAppAuth";
 
 const STORAGE_KEY = "nova_chat_sessions";
+const pendingRemoteWrites = new Set<Promise<unknown>>();
+
+interface UseSessionsOptions {
+  pollIntervalMs?: number;
+}
+
+function trackRemoteWrite<T>(promise: Promise<T>) {
+  pendingRemoteWrites.add(promise);
+  promise.finally(() => {
+    pendingRemoteWrites.delete(promise);
+  });
+  return promise;
+}
+
+export async function flushPendingSessionWrites() {
+  while (pendingRemoteWrites.size > 0) {
+    await Promise.allSettled(Array.from(pendingRemoteWrites));
+  }
+}
+
+function queueRemoteWrite<T>(promiseFactory: () => Promise<T>) {
+  return trackRemoteWrite(promiseFactory());
+}
 
 function loadDemoSessions() {
   try {
@@ -49,25 +74,53 @@ async function fetchRemoteSessions() {
 }
 
 async function saveRemoteSession(session: ChatSession) {
-  await fetch("/api/sessions", {
+  const response = await fetch("/api/sessions", {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ session }),
   });
+
+  if (!response.ok) {
+    throw new Error("Remote session save failed.");
+  }
+
+  const payload = (await response.json()) as { session?: ChatSession };
+  return payload.session ? reviveSession(payload.session) : undefined;
 }
 
 async function removeRemoteSession(id: string) {
-  await fetch(`/api/sessions?id=${encodeURIComponent(id)}`, {
+  const response = await fetch(`/api/sessions?id=${encodeURIComponent(id)}`, {
     method: "DELETE",
   });
+
+  if (!response.ok) {
+    throw new Error("Remote session delete failed.");
+  }
 }
 
-export function useSessions() {
+export function useSessions(options: UseSessionsOptions = {}) {
+  const { pollIntervalMs = 0 } = options;
+  const { mode: authMode, ready: authReady } = useAppAuth();
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [mode, setMode] = useState<"demo" | "remote">("demo");
 
+  const shouldUseRemote = authReady && authMode === "supabase";
+
   const refreshSessions = useCallback(async () => {
+    if (!shouldUseRemote) {
+      const seeded = loadDemoSessions();
+      setSessions(seeded);
+      setActiveId((currentActive) => {
+        if (currentActive && seeded.some((session) => session.id === currentActive)) {
+          return currentActive;
+        }
+        return seeded[0]?.id ?? null;
+      });
+      setMode("demo");
+      return;
+    }
+
     try {
       const remoteSessions = await fetchRemoteSessions();
       setSessions(remoteSessions);
@@ -78,23 +131,71 @@ export function useSessions() {
         return remoteSessions[0]?.id ?? null;
       });
       setMode("remote");
-      return;
     } catch {
-      const seeded = loadDemoSessions();
-      setSessions(seeded);
-      setActiveId((currentActive) => {
-        if (currentActive && seeded.some((session) => session.id === currentActive)) {
-          return currentActive;
-        }
-        return seeded[0]?.id ?? null;
-      });
-      setMode("demo");
+      setMode("remote");
     }
-  }, []);
+  }, [shouldUseRemote]);
 
   useEffect(() => {
-    void refreshSessions();
-  }, [refreshSessions]);
+    if (!authReady) return;
+
+    const timer = setTimeout(() => {
+      void refreshSessions();
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, [authReady, refreshSessions]);
+
+  useEffect(() => {
+    if (!shouldUseRemote || pollIntervalMs <= 0) return;
+
+    const interval = window.setInterval(() => {
+      void refreshSessions();
+    }, pollIntervalMs);
+
+    return () => window.clearInterval(interval);
+  }, [pollIntervalMs, refreshSessions, shouldUseRemote]);
+
+  useEffect(() => {
+    if (!shouldUseRemote) return;
+
+    const supabase = createSupabaseBrowserClient();
+    const channel = supabase
+      .channel("support-sessions-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "support_sessions" },
+        () => {
+          void refreshSessions();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [refreshSessions, shouldUseRemote]);
+
+  useEffect(() => {
+    if (!shouldUseRemote) return;
+
+    const handleWindowFocus = () => {
+      void refreshSessions();
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void refreshSessions();
+      }
+    };
+
+    window.addEventListener("focus", handleWindowFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("focus", handleWindowFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [refreshSessions, shouldUseRemote]);
 
   useEffect(() => {
     if (mode !== "demo" || sessions.length === 0) return;
@@ -121,12 +222,12 @@ export function useSessions() {
     setSessions((prev) => [session, ...prev].slice(0, MAX_SESSIONS));
     setActiveId(session.id);
 
-    if (mode === "remote") {
-      void saveRemoteSession(session);
+    if (shouldUseRemote) {
+      void queueRemoteWrite(() => saveRemoteSession(session));
     }
 
     return session;
-  }, [mode]);
+  }, [shouldUseRemote]);
 
   const updateSession = useCallback((id: string, messages: Message[]) => {
     let nextSession: ChatSession | null = null;
@@ -146,10 +247,10 @@ export function useSessions() {
       })
     );
 
-    if (mode === "remote" && nextSession) {
-      void saveRemoteSession(nextSession);
+    if (shouldUseRemote && nextSession) {
+      void queueRemoteWrite(() => saveRemoteSession(nextSession as ChatSession));
     }
-  }, [mode]);
+  }, [shouldUseRemote]);
 
   const appendMessage = useCallback((sessionId: string, message: Message) => {
     let nextSession: ChatSession | null = null;
@@ -177,10 +278,10 @@ export function useSessions() {
       })
     );
 
-    if (mode === "remote" && nextSession) {
-      void saveRemoteSession(nextSession);
+    if (shouldUseRemote && nextSession) {
+      void queueRemoteWrite(() => saveRemoteSession(nextSession as ChatSession));
     }
-  }, [mode]);
+  }, [shouldUseRemote]);
 
   const updateAgentCase = useCallback(
     (sessionId: string, patch: Partial<AgentCase> & { status?: AgentCaseStatus; severity?: AgentSeverity }) => {
@@ -206,11 +307,11 @@ export function useSessions() {
         })
       );
 
-      if (mode === "remote" && nextSession) {
-        void saveRemoteSession(nextSession);
+      if (shouldUseRemote && nextSession) {
+        void queueRemoteWrite(() => saveRemoteSession(nextSession as ChatSession));
       }
     },
-    [mode]
+    [shouldUseRemote]
   );
 
   const deleteSession = useCallback(
@@ -223,11 +324,11 @@ export function useSessions() {
         return next;
       });
 
-      if (mode === "remote") {
-        void removeRemoteSession(id);
+      if (shouldUseRemote) {
+        void queueRemoteWrite(() => removeRemoteSession(id));
       }
     },
-    [activeId, mode]
+    [activeId, shouldUseRemote]
   );
 
   const switchSession = useCallback((id: string) => {
@@ -254,10 +355,10 @@ export function useSessions() {
       })
     );
 
-    if (mode === "remote" && nextSession) {
-      void saveRemoteSession(nextSession);
+    if (shouldUseRemote && nextSession) {
+      void queueRemoteWrite(() => saveRemoteSession(nextSession as ChatSession));
     }
-  }, [mode]);
+  }, [shouldUseRemote]);
 
   return {
     sessions,

@@ -1,13 +1,12 @@
-﻿"use client";
+"use client";
 
-import { MessageSquare, Trash2, Star, Plus } from "lucide-react";
+import { MessageSquare, Star, Plus } from "lucide-react";
 import type { ChatSession } from "@/types";
 
 interface Props {
   sessions: ChatSession[];
   activeId: string | null;
   onSwitch: (id: string) => void;
-  onDelete: (id: string) => void;
   onNew: () => void;
 }
 
@@ -41,7 +40,7 @@ function SatisfactionDots({ score }: { score: number | undefined }) {
   );
 }
 
-export function HistorySidebar({ sessions, activeId, onSwitch, onDelete, onNew }: Props) {
+export function HistorySidebar({ sessions, activeId, onSwitch, onNew }: Props) {
   return (
     <aside className="flex h-full w-full flex-shrink-0 flex-col border-r border-border bg-surface/70 backdrop-blur-sm">
       <div className="flex items-center justify-between border-b border-border px-3 py-3">
@@ -68,7 +67,7 @@ export function HistorySidebar({ sessions, activeId, onSwitch, onDelete, onNew }
         )}
 
         {sessions.map((session) => (
-          <div key={session.id} className="group relative mx-1">
+          <div key={session.id} className="mx-1">
             <button
               type="button"
               onClick={() => onSwitch(session.id)}
@@ -104,17 +103,6 @@ export function HistorySidebar({ sessions, activeId, onSwitch, onDelete, onNew }
                   </span>
                 )}
               </div>
-            </button>
-            <button
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                onDelete(session.id);
-              }}
-              className="absolute right-2 top-2 rounded p-0.5 text-subtle opacity-0 transition-all group-hover:opacity-100 hover:text-danger focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
-              title="Delete conversation"
-            >
-              <Trash2 size={11} />
             </button>
           </div>
         ))}
