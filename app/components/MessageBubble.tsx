@@ -58,7 +58,7 @@ function StarRating({ current, onRate }: { current?: number; onRate: (rating: 1 
           onClick={() => onRate(star)}
           onMouseEnter={() => setHover(star)}
           onMouseLeave={() => setHover(0)}
-          className="rounded-sm transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+          className="cursor-pointer rounded-sm transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
           title={`Rate ${star}/5`}
         >
           <Star

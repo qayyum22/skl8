@@ -23,6 +23,7 @@ interface AuthState {
   mode: "demo" | "supabase";
   backendAvailable: boolean;
   authBusy: boolean;
+  isAuthenticated: boolean;
   signIn: (email: string, password: string) => Promise<{ error?: string; user?: MockUser }>;
   signUp: (name: string, email: string, password: string) => Promise<{ error?: string; message?: string; user?: MockUser }>;
   signOut: () => Promise<void>;
@@ -76,6 +77,7 @@ export function useAppAuth(): AuthState {
   const [ready, setReady] = useState(false);
   const [mode, setMode] = useState<"demo" | "supabase">("demo");
   const [authBusy, setAuthBusy] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const backendAvailable = isSupabaseConfigured();
 
   const syncFromCurrentSession = useCallback(async () => {
@@ -83,6 +85,7 @@ export function useAppAuth(): AuthState {
       const demoUser = loadDemoUser();
       setUser(demoUser);
       setMode("demo");
+      setIsAuthenticated(false);
       return;
     }
 
@@ -91,6 +94,7 @@ export function useAppAuth(): AuthState {
       if (nextUser) {
         setUser(nextUser);
         setMode("supabase");
+        setIsAuthenticated(true);
         return;
       }
     } catch {
@@ -100,6 +104,7 @@ export function useAppAuth(): AuthState {
     const demoUser = loadDemoUser();
     setUser(demoUser);
     setMode("demo");
+    setIsAuthenticated(false);
   }, [backendAvailable]);
 
   useEffect(() => {
@@ -252,6 +257,7 @@ export function useAppAuth(): AuthState {
     mode,
     backendAvailable,
     authBusy,
+    isAuthenticated,
     signIn,
     signUp,
     signOut,

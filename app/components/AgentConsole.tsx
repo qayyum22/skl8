@@ -160,56 +160,56 @@ export function AgentConsole() {
   };
 
   return (
-    <div className="min-h-full overflow-y-auto bg-ink text-text xl:flex xl:h-full xl:min-h-0 xl:overflow-hidden">
+    <div className="min-h-full overflow-y-auto bg-[#f6f2ea] text-stone-900 xl:flex xl:h-full xl:min-h-0 xl:overflow-hidden">
       <div className={`fixed inset-y-0 left-0 z-40 w-[min(88vw,320px)] transition-transform duration-300 lg:w-80 xl:static xl:inset-auto xl:w-80 ${showQueue ? "translate-x-0" : "-translate-x-full xl:translate-x-0"}`}>
-        <aside className="flex h-full w-full flex-col border-r border-border bg-surface/90 backdrop-blur-sm">
-          <div className="border-b border-border px-4 py-4">
+        <aside className="flex h-full w-full flex-col border-r border-stone-200 bg-white/95 backdrop-blur-sm">
+          <div className="border-b border-stone-200 px-4 py-4">
             <div className="mb-3 flex items-center justify-between gap-3">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-subtle">Agent Queue</p>
-                <h2 className="mt-1 text-lg font-semibold text-text">Learner Requests</h2>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-stone-500">Human Agent Queue</p>
+                <h2 className="mt-1 text-lg font-semibold text-stone-900">Student Requests</h2>
               </div>
-              <button type="button" onClick={() => setShowQueue(false)} className="rounded-lg border border-border bg-card p-2 text-subtle transition-all hover:border-accent/30 hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 xl:hidden">
+              <button type="button" onClick={() => setShowQueue(false)} className="rounded-lg border border-stone-200 bg-stone-50 p-2 text-stone-500 transition-all hover:border-stone-300 hover:text-stone-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-300 xl:hidden">
                 <X size={14} />
               </button>
             </div>
             <label className="relative block">
-              <Search size={14} className="absolute left-3 top-3.5 text-subtle" />
-              <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search requests" className="w-full rounded-xl border border-border bg-card py-3 pl-9 pr-3 text-sm text-text placeholder:text-subtle focus:border-accent/50 focus:outline-none focus:ring-2 focus:ring-accent/20" />
+              <Search size={14} className="absolute left-3 top-3.5 text-stone-400" />
+              <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search requests" className="w-full rounded-xl border border-stone-200 bg-stone-50 py-3 pl-9 pr-3 text-sm text-stone-900 placeholder:text-stone-400 focus:border-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-200" />
             </label>
           </div>
           <div className="flex-1 space-y-2 overflow-y-auto p-3 xl:min-h-0">
             {requestSessions.map((session) => (
-              <button key={session.id} type="button" onClick={() => handleSelectSession(session)} className={`w-full rounded-2xl border p-4 text-left transition-all hover:-translate-y-0.5 hover:border-accent/30 hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 ${session.id === selectedSession?.id ? "border-accent/40 bg-card shadow-sm" : "border-border bg-card/80"}`}>
+              <button key={session.id} type="button" onClick={() => handleSelectSession(session)} className={`w-full rounded-2xl border p-4 text-left transition-all hover:-translate-y-0.5 hover:border-stone-300 hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-300 ${session.id === selectedSession?.id ? "border-stone-300 bg-stone-50 shadow-sm" : "border-stone-200 bg-white"}`}>
                 <div className="mb-3 flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-text">{session.title}</p>
-                    <p className="mt-1 text-xs text-subtle">{formatRelative(session.updatedAt)}</p>
+                    <p className="truncate text-sm font-semibold text-stone-900">{session.title}</p>
+                    <p className="mt-1 text-xs text-stone-500">{formatRelative(session.updatedAt)}</p>
                   </div>
                   <span className={`rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide ${severityTone(session.agentCase!.severity)}`}>{session.agentCase!.severity}</span>
                 </div>
-                <p className="line-clamp-2 text-xs leading-relaxed text-subtle">{session.agentCase!.summary}</p>
-                <div className="mt-3 flex items-center justify-between gap-2 text-[11px] text-subtle">
+                <p className="line-clamp-2 text-xs leading-relaxed text-stone-600">{session.agentCase!.summary}</p>
+                <div className="mt-3 flex items-center justify-between gap-2 text-[11px] text-stone-500">
                   <span className="truncate uppercase tracking-wide">{session.agentCase!.category.replace("_", " ")}</span>
                   <span className="truncate">{session.agentCase!.assignedTo || "Unassigned"}</span>
                 </div>
               </button>
             ))}
-            {requestSessions.length === 0 && <div className="rounded-2xl border border-dashed border-border bg-card/70 p-4 text-sm text-subtle">No learner requests match the selected filters.</div>}
+            {requestSessions.length === 0 && <div className="rounded-2xl border border-dashed border-stone-200 bg-stone-50 p-4 text-sm text-stone-500">No student requests match the selected filters.</div>}
           </div>
         </aside>
       </div>
 
-      {showQueue && <button type="button" className="fixed inset-0 z-30 bg-ink/50 backdrop-blur-[2px] xl:hidden" onClick={() => setShowQueue(false)} aria-label="Close request queue" />}
+      {showQueue && <button type="button" className="fixed inset-0 z-30 bg-stone-900/10 backdrop-blur-[2px] xl:hidden" onClick={() => setShowQueue(false)} aria-label="Close request queue" />}
 
       <div className="flex min-w-0 flex-1 flex-col xl:min-h-0">
-        <header className="border-b border-border bg-surface/80 px-3 py-4 backdrop-blur-sm sm:px-4 md:px-6">
+        <header className="border-b border-stone-200 bg-white/90 px-3 py-4 backdrop-blur-sm sm:px-4 md:px-6">
           <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
             <div className="flex items-center gap-3">
-              <button type="button" onClick={() => setShowQueue((value) => !value)} className="rounded-lg border border-border bg-card p-2 text-subtle transition-all hover:border-accent/30 hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 xl:hidden"><Menu size={14} /></button>
+              <button type="button" onClick={() => setShowQueue((value) => !value)} className="rounded-lg border border-stone-200 bg-stone-50 p-2 text-stone-500 transition-all hover:border-stone-300 hover:text-stone-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-300 xl:hidden"><Menu size={14} /></button>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-subtle">Human Agent View</p>
-                <h1 className="text-lg font-semibold text-text sm:text-xl">Learner Resolution Console</h1>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-stone-500">Human Agent View</p>
+                <h1 className="text-lg font-semibold text-stone-900 sm:text-xl">Student Resolution Console</h1>
               </div>
             </div>
             <div className="grid w-full gap-2 sm:grid-cols-2 xl:flex xl:w-auto xl:flex-wrap xl:justify-end">
@@ -218,7 +218,7 @@ export function AgentConsole() {
                 <button
                   type="button"
                   onClick={closeSelectedSession}
-                  className="inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs text-text transition-all hover:border-accent/30 hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+                  className="inline-flex items-center justify-center gap-2 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-xs text-stone-900 transition-all hover:border-stone-300 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-300"
                 >
                   <X size={12} />
                   Close case
@@ -227,7 +227,7 @@ export function AgentConsole() {
               <button
                 type="button"
                 onClick={() => setShowMobileStats((value) => !value)}
-                className="inline-flex items-center justify-between gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs text-text transition-all hover:border-accent/30 hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 xl:hidden"
+                className="inline-flex items-center justify-between gap-2 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-xs text-stone-900 transition-all hover:border-stone-300 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-300 xl:hidden"
               >
                 Queue stats
                 <ChevronDown size={12} className={`transition-transform ${showMobileStats ? "rotate-180" : ""}`} />
@@ -235,7 +235,7 @@ export function AgentConsole() {
               <button
                 type="button"
                 onClick={() => setShowMobileFilters((value) => !value)}
-                className="inline-flex items-center justify-between gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs text-text transition-all hover:border-accent/30 hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 xl:hidden"
+                className="inline-flex items-center justify-between gap-2 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-xs text-stone-900 transition-all hover:border-stone-300 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-300 xl:hidden"
               >
                 Filters
                 <ChevronDown size={12} className={`transition-transform ${showMobileFilters ? "rotate-180" : ""}`} />
@@ -248,10 +248,10 @@ export function AgentConsole() {
           </div>
           {showMobileStats && (
             <div className="mt-4 grid gap-3 xl:hidden">
-              <div className="rounded-2xl border border-border bg-card/80 p-4 shadow-sm"><div className="flex items-center gap-2 text-subtle"><MessageSquare size={14} /><span className="text-xs uppercase tracking-wide">Total requests</span></div><p className="mt-2 text-2xl font-semibold text-text">{totalRequestCount}</p></div>
-              <div className="rounded-2xl border border-border bg-card/80 p-4 shadow-sm"><div className="flex items-center gap-2 text-subtle"><Clock3 size={14} /><span className="text-xs uppercase tracking-wide">Open queue</span></div><p className="mt-2 text-2xl font-semibold text-text">{openCount}</p></div>
-              <div className="rounded-2xl border border-border bg-card/80 p-4 shadow-sm"><div className="flex items-center gap-2 text-subtle"><AlertTriangle size={14} /><span className="text-xs uppercase tracking-wide">Urgent</span></div><p className="mt-2 text-2xl font-semibold text-text">{urgentCount}</p></div>
-              <div className="rounded-2xl border border-border bg-card/80 p-4 shadow-sm"><div className="flex items-center gap-2 text-subtle"><ShieldAlert size={14} /><span className="text-xs uppercase tracking-wide">Escalated</span></div><p className="mt-2 text-2xl font-semibold text-text">{escalatedCount}</p></div>
+              <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm"><div className="flex items-center gap-2 text-subtle"><MessageSquare size={14} /><span className="text-xs uppercase tracking-wide">Total requests</span></div><p className="mt-2 text-2xl font-semibold text-text">{totalRequestCount}</p></div>
+              <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm"><div className="flex items-center gap-2 text-subtle"><Clock3 size={14} /><span className="text-xs uppercase tracking-wide">Open queue</span></div><p className="mt-2 text-2xl font-semibold text-text">{openCount}</p></div>
+              <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm"><div className="flex items-center gap-2 text-subtle"><AlertTriangle size={14} /><span className="text-xs uppercase tracking-wide">Urgent</span></div><p className="mt-2 text-2xl font-semibold text-text">{urgentCount}</p></div>
+              <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm"><div className="flex items-center gap-2 text-subtle"><ShieldAlert size={14} /><span className="text-xs uppercase tracking-wide">Escalated</span></div><p className="mt-2 text-2xl font-semibold text-text">{escalatedCount}</p></div>
             </div>
           )}
           {showMobileFilters && (
@@ -310,9 +310,9 @@ export function AgentConsole() {
             </aside>
           </div>
         ) : requestSessions.length > 0 ? (
-          <div className="flex flex-1 items-center justify-center px-6 text-center text-subtle">Select a learner request from the queue to open the conversation, or keep the queue closed if you just want to review workload.</div>
+          <div className="flex flex-1 items-center justify-center px-6 text-center text-stone-500">Select a student request from the queue to open the conversation.</div>
         ) : (
-          <div className="flex flex-1 items-center justify-center px-6 text-center text-subtle">No learner requests yet. Use the customer support view or widget to create a support conversation first.</div>
+          <div className="flex flex-1 items-center justify-center px-6 text-center text-stone-500">No student requests yet. Use the student support view or widget to create a support conversation first.</div>
         )}
       </div>
     </div>

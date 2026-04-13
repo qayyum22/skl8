@@ -1,0 +1,1 @@
+export type ChatConfidence = "high" | "medium" | "low";

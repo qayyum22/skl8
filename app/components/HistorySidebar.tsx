@@ -49,7 +49,7 @@ export function HistorySidebar({ sessions, activeId, onSwitch, onNew }: Props) {
         </span>
         <button
           onClick={onNew}
-          className="rounded-md p-1 text-subtle transition-colors hover:bg-card hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+          className="rounded-md p-1 text-subtle cursor-pointer transition-colors hover:bg-card hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
           title="New conversation"
           type="button"
         >
@@ -71,7 +71,7 @@ export function HistorySidebar({ sessions, activeId, onSwitch, onNew }: Props) {
             <button
               type="button"
               onClick={() => onSwitch(session.id)}
-              className={`flex w-full items-start gap-2 rounded-lg border px-3 py-2.5 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 ${
+              className={`flex w-full items-start gap-2 rounded-lg cursor-pointer border px-3 py-2.5 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 ${
                 session.id === activeId
                   ? "border-accent/30 bg-accent/10"
                   : "border-transparent hover:border-border hover:bg-card/70"

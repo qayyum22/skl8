@@ -107,7 +107,7 @@ export function DatabaseOperationsPanel({ sessionCount, onRefreshSessions }: Pro
           type="button"
           onClick={() => void loadSnapshot()}
           disabled={busyAction !== null || !backendAvailable || mode !== "supabase"}
-          className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-surface px-4 py-2 text-sm text-text transition-all hover:border-accent/30 hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 disabled:opacity-50"
+          className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-border bg-surface px-4 py-2 text-sm text-text transition-all hover:border-accent/30 hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 disabled:opacity-50"
         >
           {busyAction === "refresh" ? <Loader2 size={14} className="animate-spin" /> : <RefreshCcw size={14} />}
           Load DB stats
@@ -116,7 +116,7 @@ export function DatabaseOperationsPanel({ sessionCount, onRefreshSessions }: Pro
           type="button"
           onClick={() => void runAction("seed_sessions")}
           disabled={busyAction !== null || !backendAvailable || mode !== "supabase"}
-          className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-surface px-4 py-2 text-sm text-text transition-all hover:border-accent/30 hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 disabled:opacity-50"
+          className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-border bg-surface px-4 py-2 text-sm text-text transition-all hover:border-accent/30 hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 disabled:opacity-50"
         >
           {busyAction === "seed" ? <Loader2 size={14} className="animate-spin" /> : <UploadCloud size={14} />}
           Seed support data
@@ -125,7 +125,7 @@ export function DatabaseOperationsPanel({ sessionCount, onRefreshSessions }: Pro
           type="button"
           onClick={() => void runAction("clear_sessions")}
           disabled={busyAction !== null || !backendAvailable || mode !== "supabase"}
-          className="inline-flex items-center justify-center gap-2 rounded-xl border border-danger/30 bg-danger/10 px-4 py-2 text-sm text-danger transition-all hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger/50 disabled:opacity-50"
+          className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-danger/30 bg-danger/10 px-4 py-2 text-sm text-danger transition-all hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger/50 disabled:opacity-50"
         >
           {busyAction === "clear" ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
           Clear DB sessions

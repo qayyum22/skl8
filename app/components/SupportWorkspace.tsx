@@ -311,6 +311,20 @@ export function SupportWorkspace({ mode, onClose }: Props) {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, liveTools, activeGuide, showPaymentHelp]);
 
+  useEffect(() => {
+    if (mode !== "page") {
+      return;
+    }
+
+    const syncSidebarLayout = () => {
+      setShowHistory(isDesktopViewport());
+    };
+
+    syncSidebarLayout();
+    window.addEventListener("resize", syncSidebarLayout);
+    return () => window.removeEventListener("resize", syncSidebarLayout);
+  }, [mode]);
+
   const startNewSession = useCallback(() => {
     const initialMessages = [WELCOME_MESSAGE];
     const session = createSession(initialMessages);
@@ -712,7 +726,7 @@ Note: I saved this in demo mode because live payment storage is not available ri
     }
   };
 
-  const containerClass = mode === "page" ? "flex h-full min-h-0 overflow-hidden bg-ink text-text" : "flex h-full min-h-0 flex-col overflow-hidden rounded-[inherit] bg-card text-text";
+  const containerClass = mode === "page" ? "flex h-full min-h-0 overflow-hidden bg-white text-stone-900" : "flex h-full min-h-0 flex-col overflow-hidden rounded-[inherit] bg-white text-stone-900";
 
   return (
     <div className={containerClass}>
@@ -722,12 +736,12 @@ Note: I saved this in demo mode because live payment storage is not available ri
             type="button"
             onClick={() => setShowHistory(false)}
             aria-label="Close history sidebar"
-            className={`fixed inset-0 z-30 bg-ink/50 backdrop-blur-[2px] transition-opacity duration-300 lg:hidden ${showHistory ? "opacity-100" : "pointer-events-none opacity-0"}`}
+            className={`fixed inset-0 z-30 cursor-pointer bg-ink/50 backdrop-blur-[2px] transition-opacity duration-300 lg:hidden ${showHistory ? "opacity-100" : "pointer-events-none opacity-0"}`}
           />
           <div
-            className={`fixed inset-y-0 left-0 z-40 w-[min(88vw,320px)] overflow-hidden transition-[transform,width,opacity] duration-300 ${showHistory ? "translate-x-0" : "-translate-x-full"} lg:relative lg:inset-auto lg:translate-x-0 lg:flex-shrink-0 ${showHistory ? "lg:w-[320px] lg:opacity-100" : "lg:w-0 lg:opacity-0 lg:pointer-events-none"}`}
+            className={`fixed inset-y-0 left-0 z-40 w-[min(88vw,320px)] overflow-hidden transition-transform duration-300 ${showHistory ? "translate-x-0" : "-translate-x-full"} lg:relative lg:inset-auto lg:w-[320px] lg:translate-x-0 lg:flex-shrink-0`}
           >
-            <div className="h-full lg:w-full">
+            <div id="support-request-history" className="h-full lg:w-full">
               <HistorySidebar
                 sessions={sessions}
                 activeId={activeId}
@@ -740,59 +754,88 @@ Note: I saved this in demo mode because live payment storage is not available ri
       )}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="border-b border-border bg-surface/80 px-3 py-3 backdrop-blur-sm sm:px-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex min-w-0 items-center gap-3">
-              {mode === "page" && (
+        {mode === "page" && (
+          <header className="border-b border-stone-200 bg-white/95 px-3 py-3 backdrop-blur-sm sm:px-4 md:px-6">
+            <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-3">
                 <button
                   type="button"
-                  onClick={() => setShowHistory((value) => !value)}
-                  className="rounded-lg border border-border bg-card p-2 text-subtle transition-all hover:border-accent/30 hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+                  onClick={() => setShowHistory((current) => !current)}
+                  className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-stone-200 bg-stone-50 text-stone-600 transition-all hover:border-stone-300 hover:text-stone-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-300 lg:hidden"
+                  aria-label={showHistory ? "Close request history" : "Open request history"}
+                  aria-expanded={showHistory}
+                  aria-controls="support-request-history"
                 >
-                  {showHistory ? <X size={14} /> : <PanelLeftOpen size={14} />}
+                  {showHistory ? <X size={16} /> : <PanelLeftOpen size={16} />}
                 </button>
-              )}
-              <div className="glow-accent flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-accent/30 bg-accent/10">
-                <GraduationCap size={17} className="text-accent-light" />
-              </div>
-              <div className="min-w-0">
-                <h1 className="truncate text-xs font-bold tracking-[0.16em] text-text sm:text-sm">SKL8</h1>
-                <p className="text-xs text-subtle">Training-center learner support</p>
-              </div>
-            </div>
-
-            <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto sm:flex-nowrap">
-              {isLoading && (
-                <div className="flex items-center gap-1.5 text-xs text-accent-light sm:mr-1">
-                  <Loader2 size={11} className="animate-spin" />
-                  <span className="hidden sm:block">Helping learner...</span>
+                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-stone-200 bg-stone-50">
+                  <GraduationCap size={17} className="text-accent-light" />
                 </div>
-              )}
-              
-              <button
-                type="button"
-                onClick={startNewSession}
-                className="flex-1 rounded-xl border border-border cursor-pointer bg-card px-3 py-2 text-xs text-subtle transition-all hover:border-accent/30 hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 sm:flex-none"
-              >
-                New request
-              </button>
-              <AuthStatus compact />
-              {onClose && (
+                <div className="min-w-0">
+                  <h1 className="truncate text-xs font-bold tracking-[0.16em] text-stone-900 sm:text-sm">SKL8</h1>
+                  <p className="text-xs text-stone-500">Training-center learner support</p>
+                </div>
+              </div>
+
+              <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto sm:flex-nowrap">
+                {isLoading && (
+                  <div className="flex items-center gap-1.5 text-xs text-stone-500 sm:mr-1">
+                    <Loader2 size={11} className="animate-spin" />
+                    <span className="hidden sm:block">Helping learner...</span>
+                  </div>
+                )}
+                
+              </div>
+            </div>
+          </header>
+        )}
+
+        {mode === "widget" && (
+          <header className="border-b border-stone-200 bg-white/90 px-3 py-3 backdrop-blur-sm sm:px-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-stone-200 bg-stone-50">
+                  <GraduationCap size={17} className="text-accent-light" />
+                </div>
+                <div className="min-w-0">
+                  <h1 className="truncate text-xs font-bold tracking-[0.16em] text-stone-900 sm:text-sm">SKL8</h1>
+                  <p className="text-xs text-stone-500">Training-center learner support</p>
+                </div>
+              </div>
+
+              <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto sm:flex-nowrap">
+                {isLoading && (
+                  <div className="flex items-center gap-1.5 text-xs text-stone-500 sm:mr-1">
+                    <Loader2 size={11} className="animate-spin" />
+                    <span className="hidden sm:block">Helping learner...</span>
+                  </div>
+                )}
+                
                 <button
                   type="button"
-                  onClick={onClose}
-                  className="rounded-lg border border-border bg-card p-2 text-subtle cursor-pointer transition-all hover:border-accent/30 hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+                  onClick={startNewSession}
+                  className="flex-1 rounded-xl border border-stone-200 cursor-pointer bg-stone-50 px-3 py-2 text-xs text-stone-600 transition-all hover:border-stone-300 hover:text-stone-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-300 sm:flex-none"
                 >
-                  <X size={14} />
+                  New request
                 </button>
-              )}
+                <AuthStatus compact />
+                {onClose && (
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="rounded-lg border border-stone-200 bg-stone-50 p-2 text-stone-500 cursor-pointer transition-all hover:border-stone-300 hover:text-stone-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-300"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-        </header>
+          </header>
+        )}
 
 
-        <div className="flex min-h-0 flex-1">
-          <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex min-h-0 flex-1 overflow-hidden">
+          <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
             <div className="flex-1 overflow-y-auto px-3 py-4 sm:px-4 md:px-6 md:py-6">
               <div className={`mx-auto space-y-4 sm:space-y-5 ${mode === "page" ? "max-w-4xl" : "max-w-none"}`}>
                 {messages.map((message, index) => (
@@ -808,15 +851,15 @@ Note: I saved this in demo mode because live payment storage is not available ri
                     />
 
                     {index === 0 && showFaqChips && (
-                      <div className="rounded-2xl border border-border bg-surface/70 p-4 shadow-sm">
-                        <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-subtle">Popular help topics</p>
+                      <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4 shadow-sm">
+                        <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-stone-500">Popular help topics</p>
                         <div className="flex flex-wrap gap-2">
                           {QUICK_ACTIONS.map((action) => (
                             <button
                               key={action.label}
                               type="button"
                               onClick={() => handleAction(action)}
-                              className="rounded-full border border-border bg-card px-3 py-2 text-xs text-subtle transition-all hover:border-accent/30 hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+                              className="cursor-pointer rounded-full border border-stone-200 bg-white px-3 py-2 text-xs text-stone-600 transition-all hover:border-stone-300 hover:text-stone-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-300"
                             >
                               {action.label}
                             </button>
@@ -835,26 +878,26 @@ Note: I saved this in demo mode because live payment storage is not available ri
                     )}
 
                     {index === 0 && activeGuide && !showPaymentHelp && (
-                      <div className="rounded-2xl border border-accent/20 bg-accent/5 p-4 shadow-sm">
+                      <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4 shadow-sm">
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
-                            <p className="text-sm font-semibold text-text sm:text-base">{activeGuide.title}</p>
-                            {activeGuide.context && <p className="mt-2 text-sm leading-relaxed text-subtle">{activeGuide.context}</p>}
-                            <ol className="mt-3 space-y-2 text-sm text-subtle">
+                            <p className="text-sm font-semibold text-stone-900 sm:text-base">{activeGuide.title}</p>
+                            {activeGuide.context && <p className="mt-2 text-sm leading-relaxed text-stone-600">{activeGuide.context}</p>}
+                            <ol className="mt-3 space-y-2 text-sm text-stone-600">
                               {activeGuide.steps.map((step, index) => (
                                 <li key={step} className="flex gap-2">
-                                  <span className="text-accent-light">{index + 1}.</span>
+                                  <span className="text-stone-400">{index + 1}.</span>
                                   <span>{step}</span>
                                 </li>
                               ))}
                             </ol>
                             {activeGuide.checks && activeGuide.checks.length > 0 && (
-                              <div className="mt-4 rounded-xl border border-border/60 bg-card/70 p-3">
-                                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-subtle">Have these ready</p>
-                                <ul className="mt-2 space-y-1 text-sm text-subtle">
+                              <div className="mt-4 rounded-xl border border-stone-200 bg-white p-3">
+                                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-stone-500">Have these ready</p>
+                                <ul className="mt-2 space-y-1 text-sm text-stone-600">
                                   {activeGuide.checks.map((check) => (
                                     <li key={check} className="flex gap-2">
-                                      <span className="text-accent-light">-</span>
+                                      <span className="text-stone-400">-</span>
                                       <span>{check}</span>
                                     </li>
                                   ))}
@@ -865,7 +908,7 @@ Note: I saved this in demo mode because live payment storage is not available ri
                           <button
                             type="button"
                             onClick={() => setActiveGuide(null)}
-                            className="rounded-lg p-1 text-subtle transition-colors hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+                            className="cursor-pointer rounded-lg p-1 text-stone-500 transition-colors hover:text-stone-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-300"
                           >
                             <X size={14} />
                           </button>
@@ -877,8 +920,8 @@ Note: I saved this in demo mode because live payment storage is not available ri
                               type="button"
                               onClick={() => handleGuideAction(action)}
                               className={action.tone === "primary"
-                                ? "w-full rounded-xl bg-success px-4 py-2 text-sm text-white transition-all hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success/60 sm:w-auto"
-                                : "w-full rounded-xl border border-border bg-card px-4 py-2 text-sm text-text transition-all hover:border-accent/30 hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 sm:w-auto"
+                                ? "w-full cursor-pointer rounded-xl bg-stone-900 px-4 py-2 text-sm text-white transition-all hover:bg-stone-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400 sm:w-auto"
+                                : "w-full cursor-pointer rounded-xl border border-stone-200 bg-white px-4 py-2 text-sm text-stone-900 transition-all hover:border-stone-300 hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-300 sm:w-auto"
                               }
                             >
                               {action.label}
@@ -893,7 +936,7 @@ Note: I saved this in demo mode because live payment storage is not available ri
               </div>
             </div>
 
-            <div className="border-t border-border bg-surface/85 px-3 py-3 backdrop-blur-sm sm:px-4 md:px-6 md:py-4">
+            <div className="border-t border-stone-200 bg-white/95 px-3 py-3 backdrop-blur-sm sm:px-4 md:px-6 md:py-4">
               {mode === "widget" && (
                 <div className="mb-3 flex gap-2 overflow-x-auto pb-1 scrollbar-none">
                   {QUICK_ACTIONS.slice(0, 5).map((action) => (
@@ -901,7 +944,7 @@ Note: I saved this in demo mode because live payment storage is not available ri
                       key={action.label}
                       type="button"
                       onClick={() => handleAction(action)}
-                      className="flex-shrink-0 rounded-full border border-border bg-card px-3 py-1 text-xs text-subtle transition-all hover:border-accent/30 hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+                      className="flex-shrink-0 cursor-pointer rounded-full border border-stone-200 bg-stone-50 px-3 py-1 text-xs text-stone-600 transition-all hover:border-stone-300 hover:text-stone-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-300"
                     >
                       {action.label}
                     </button>
@@ -928,14 +971,14 @@ Note: I saved this in demo mode because live payment storage is not available ri
                     placeholder="Type your support request..."
                     rows={1}
                     disabled={isLoading}
-                    className="w-full resize-none rounded-xl border border-border bg-card px-4 py-3 text-sm leading-relaxed text-text placeholder:text-subtle focus:border-accent/50 focus:outline-none focus:ring-2 focus:ring-accent/20 disabled:opacity-50"
+                    className="w-full resize-none rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm leading-relaxed text-stone-900 placeholder:text-stone-400 focus:border-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-200 disabled:opacity-50"
                     style={{ minHeight: "48px", maxHeight: "160px" }}
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={isLoading || !input.trim()}
-                  className="glow-accent flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-accent text-white transition-all hover:scale-105 hover:bg-accent-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 disabled:cursor-not-allowed disabled:opacity-40"
+                  className="flex h-11 cursor-pointer w-11 flex-shrink-0 items-center justify-center rounded-xl bg-stone-900 text-white transition-all hover:bg-stone-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {isLoading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                 </button>

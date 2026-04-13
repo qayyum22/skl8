@@ -1,92 +1,81 @@
-﻿import Link from "next/link";
-import { ArrowRight, BadgeHelp, Bot, GraduationCap, Headset, LayoutDashboard } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, Bot, GraduationCap, ShieldCheck } from "lucide-react";
 import { AuthPanel } from "./components/AuthPanel";
-import { RoleSwitcher } from "./components/RoleSwitcher";
 import { SupportLauncher } from "./components/SupportLauncher";
+import { Navbar } from "./components/Navbar";
 
-const FEATURE_CARDS = [
-  {
-    title: "Learner self-service",
-    text: "Handle portal login, missing classes, payment receipts, and certificate requests through an AI-first support flow.",
-    icon: Bot,
-  },
-  {
-    title: "Human resolution queue",
-    text: "Escalated learner issues route into a severity-first support console for human agents.",
-    icon: Headset,
-  },
-  {
-    title: "Operational visibility",
-    text: "Admins can track queue health, CSAT, escalations, and agent performance from a separate KPI dashboard.",
-    icon: LayoutDashboard,
-  },
+const QUICK_LINKS = [
+  { label: "Student support", href: "/support" },
+  { label: "Human agent queue", href: "/support/agent" },
+  { label: "Admin dashboard", href: "/support/admin" },
 ] as const;
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-background text-text">
-      <header className="border-b border-border bg-surface/90 px-4 py-4 backdrop-blur-sm md:px-6">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="glow-accent flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl border border-accent/30 bg-accent/10 text-accent-light">
-              <GraduationCap size={18} />
+    <div className="flex h-dvh flex-col overflow-hidden bg-[#f6f2ea] text-stone-900">
+      <Navbar />
+
+      <main className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 overflow-hidden px-4 py-4 md:px-6 md:py-6">
+        <div className="grid min-h-0 w-full gap-4 lg:grid-cols-[1.05fr_0.95fr]">
+          <section className="min-h-0 overflow-y-auto rounded-[32px] border border-stone-200 bg-[radial-gradient(circle_at_top_left,_rgba(197,164,126,0.18),_transparent_40%),linear-gradient(180deg,_rgba(255,255,255,0.96),_rgba(248,244,237,0.96))] p-6 shadow-[0_20px_70px_rgba(75,55,34,0.08)] sm:p-8">
+            <div className="inline-flex items-center gap-2 rounded-full border border-stone-300/80 bg-white/80 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-stone-500">
+              <ShieldCheck size={12} />
+              Minimal support workspace
             </div>
-            <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-subtle">skl8 support</p>
-              <h1 className="truncate text-base font-semibold sm:text-lg">skl8</h1>
+
+            <div className="mt-8 max-w-2xl">
+              <h1 className="text-4xl font-semibold leading-tight tracking-[-0.04em] text-stone-900 sm:text-5xl md:text-6xl">
+                Quiet, fast support for students and staff.
+              </h1>
+              <p className="mt-5 max-w-xl text-sm leading-7 text-stone-600 sm:text-base sm:leading-8">
+                A single support flow for student questions, human agent follow-up, and admin visibility. Clean by default, ready for real conversations.
+              </p>
             </div>
-          </div>
-          <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
-            <RoleSwitcher />
-            <Link href="/support" className="rounded-xl bg-accent px-4 py-2 text-center text-sm text-white transition-all hover:bg-accent-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60">Open full support</Link>
-          </div>
+
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link
+                href="/support"
+                className="inline-flex items-center gap-2 rounded-full bg-stone-900 px-5 py-3 text-sm font-medium text-white transition-all hover:bg-stone-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400"
+              >
+                Open support
+                <ArrowRight size={14} />
+              </Link>
+              <div className="inline-flex items-center gap-2 rounded-full border border-stone-300 bg-white/80 px-4 py-3 text-sm text-stone-600">
+                <Bot size={14} />
+                AI + human handoff
+              </div>
+            </div>
+
+            <div className="mt-10 grid gap-3 sm:grid-cols-3">
+              {QUICK_LINKS.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="rounded-[24px] border border-stone-200 bg-white/88 px-4 py-4 text-sm text-stone-700 transition-all hover:border-stone-300 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400"
+                >
+                  <p className="font-medium text-stone-900">{item.label}</p>
+                  <p className="mt-1 text-xs uppercase tracking-[0.16em] text-stone-500">Open</p>
+                </Link>
+              ))}
+            </div>
+
+            <div className="mt-10 rounded-[28px] border border-stone-200 bg-white/82 p-5 sm:p-6">
+              <div className="flex items-center gap-3 text-stone-900">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#efe4d4] text-stone-700">
+                  <GraduationCap size={18} />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Built for clarity</p>
+                  <p className="text-sm text-stone-600">No dashboard overload on the first screen. Just the actions people need.</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="min-h-0 overflow-y-auto rounded-[32px] border border-stone-200 bg-white/90 p-2 shadow-[0_20px_70px_rgba(75,55,34,0.08)]">
+            <AuthPanel />
+          </section>
         </div>
-      </header>
-
-      <main className="mx-auto grid min-h-[calc(100vh-80px)] max-w-7xl gap-8 px-4 py-8 md:px-6 md:py-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-start lg:gap-10">
-        <section>
-          <div className="inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent/10 px-3 py-1 text-xs text-accent-light">
-            <BadgeHelp size={12} />
-            Demo mode plus Supabase-backed auth and data
-          </div>
-          <h2 className="mt-5 max-w-3xl text-3xl font-semibold leading-tight sm:text-4xl md:text-5xl">
-            Training-center support built for learners, human agents, and operations teams.
-          </h2>
-          <p className="mt-5 max-w-2xl text-sm leading-7 text-subtle sm:text-base sm:leading-8">
-            Learners can launch support from the bottom-right widget or a full support page. Human agents work escalated issues in a filtered queue, and admins monitor response time, resolution quality, escalations, and team workload.
-          </p>
-          <div className="mt-8 grid gap-3 sm:flex sm:flex-wrap">
-            <Link href="/support" className="inline-flex items-center justify-center gap-2 rounded-2xl bg-accent px-5 py-3 text-sm text-white transition-all hover:bg-accent-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60">
-              Explore learner support
-              <ArrowRight size={14} />
-            </Link>
-            <Link href="/support/agent" className="rounded-2xl border border-border bg-card px-5 py-3 text-center text-sm text-text transition-all hover:border-accent/30 hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60">
-              Open human agent queue
-            </Link>
-            <Link href="/support/admin" className="rounded-2xl border border-border bg-card px-5 py-3 text-center text-sm text-text transition-all hover:border-accent/30 hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60">
-              Open admin KPIs
-            </Link>
-          </div>
-
-          <div className="mt-8 grid gap-4 sm:mt-10">
-            {FEATURE_CARDS.map((card) => {
-              const Icon = card.icon;
-              return (
-                <article key={card.title} className="rounded-3xl border border-border bg-card p-5 shadow-sm sm:p-6">
-                  <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-accent/10 text-accent-light">
-                    <Icon size={18} />
-                  </div>
-                  <h3 className="text-lg font-semibold">{card.title}</h3>
-                  <p className="mt-2 text-sm leading-7 text-subtle">{card.text}</p>
-                </article>
-              );
-            })}
-          </div>
-        </section>
-
-        <section>
-          <AuthPanel />
-        </section>
       </main>
 
       <SupportLauncher />

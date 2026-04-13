@@ -1,6 +1,6 @@
-﻿"use client";
+"use client";
 
-import { AlertCircle, Database, KeyRound, Loader2, LogIn, LogOut, ShieldCheck, UserPlus } from "lucide-react";
+import { AlertCircle, ArrowRight, CheckCircle2, Loader2, LogIn, LogOut, UserPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { AppRole } from "@/types";
@@ -8,9 +8,9 @@ import { useAppAuth } from "@/hooks/useAppAuth";
 import { getRoleLabel } from "@/app/lib/role-labels";
 
 const DEMO_CREDENTIALS = [
-  { label: "Student demo", email: "ava.learner@skl8.demo", password: "Password123!", role: "customer" },
-  { label: "Human agent demo", email: "jordan.agent@skl8.demo", password: "Password123!", role: "agent" },
-  { label: "Admin demo", email: "priya.admin@skl8.demo", password: "Password123!", role: "admin" },
+  { label: "Student", email: "ava.learner@skl8.demo", password: "Password123!", role: "customer" },
+  { label: "Human Agent", email: "jordan.agent@skl8.demo", password: "Password123!", role: "agent" },
+  { label: "Admin", email: "priya.admin@skl8.demo", password: "Password123!", role: "admin" },
 ] as const;
 
 function getDashboardPath(role: AppRole) {
@@ -41,7 +41,7 @@ export function AuthPanel() {
       setStatus({ tone: "error", message: result.error });
       return;
     }
-    setStatus({ tone: "success", message: "Signed in with Supabase successfully. Redirecting..." });
+    setStatus({ tone: "success", message: "Signed in successfully. Redirecting..." });
     router.push(getDashboardPath(result.user?.role ?? "customer"));
   };
 
@@ -64,171 +64,178 @@ export function AuthPanel() {
     await signOut();
     router.push("/");
     router.refresh();
-    setStatus({ tone: "neutral", message: "Signed out successfully." });
   };
 
   const fillDemoCredentials = (demo: (typeof DEMO_CREDENTIALS)[number]) => {
     setTab("signin");
     setEmail(demo.email);
     setPassword(demo.password);
-    setStatus({ tone: "neutral", message: `${demo.label} credentials loaded. Click sign in to continue.` });
+    setStatus({ tone: "neutral", message: `${demo.label} credentials loaded.` });
   };
 
   const statusClass =
     status?.tone === "error"
-      ? "border-danger/25 bg-danger/10 text-danger"
+      ? "border-red-200 bg-red-50 text-red-700"
       : status?.tone === "success"
-        ? "border-success/25 bg-success/10 text-success"
-        : "border-border bg-surface/70 text-subtle";
+        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+        : "border-stone-200 bg-stone-50 text-stone-600";
 
   return (
-    <section className="rounded-3xl border border-border bg-card p-5 shadow-sm sm:p-6">
-      <div className="flex items-start justify-between gap-3">
+    <section className="rounded-[30px] bg-white p-5 sm:p-6">
+      <div className="flex items-start justify-between gap-3 border-b border-stone-100 pb-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-subtle">Auth</p>
-          <h3 className="mt-1 text-xl font-semibold text-text">Supabase access</h3>
-          <p className="mt-2 text-sm leading-6 text-subtle">
-            Keep demo mode for mock role switching, or sign in with Supabase to use real Postgres-backed sessions and role-based access.
-          </p>
+          <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-stone-500">Access</p>
+          <h2 className="mt-1 text-2xl font-semibold tracking-[-0.03em] text-stone-900">Sign in quietly.</h2>
         </div>
-        <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] uppercase tracking-wide ${backendAvailable ? "border-success/25 bg-success/10 text-success" : "border-warning/25 bg-warning/10 text-warning"}`}>
-          <Database size={12} />
-          {backendAvailable ? "Backend ready" : "Demo only"}
+        <div className={`rounded-full px-3 py-1 text-[11px] font-medium uppercase tracking-[0.16em] ${backendAvailable ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
+          {backendAvailable ? "Backend ready" : "Demo mode"}
         </div>
       </div>
 
       {!ready ? (
-        <div className="mt-5 flex items-center gap-2 text-sm text-subtle">
-          <Loader2 size={15} className="animate-spin" />
+        <div className="flex min-h-[240px] items-center justify-center gap-2 text-sm text-stone-500">
+          <Loader2 size={16} className="animate-spin" />
           Checking auth state...
         </div>
       ) : mode === "supabase" ? (
-        <div className="mt-5 space-y-4">
-          <div className="rounded-2xl border border-border bg-surface/70 p-4">
-            <div className="flex items-center gap-2 text-accent-light">
-              <ShieldCheck size={16} />
-              <p className="text-sm font-medium text-text">Signed in as {user.name}</p>
+        <div className="space-y-5 py-6">
+          <div className="rounded-[24px] border border-stone-200 bg-stone-50 p-4">
+            <div className="flex items-center gap-2 text-stone-900">
+              <CheckCircle2 size={16} className="text-emerald-600" />
+              <p className="text-sm font-medium">Signed in as {user.name}</p>
             </div>
-            <p className="mt-2 text-sm text-subtle">{user.email}</p>
-            <p className="mt-1 text-xs uppercase tracking-wide text-subtle">Role: {getRoleLabel(user.role)}</p>
-            <p className="mt-3 text-xs leading-5 text-subtle">
-              Student is the default Supabase role. Promote human agent and admin users by updating the `profiles.role` value in Postgres.
-            </p>
+            <p className="mt-3 text-sm text-stone-600">{user.email}</p>
+            <p className="mt-1 text-sm text-stone-500">{getRoleLabel(user.role)}</p>
           </div>
+
           <button
             type="button"
             onClick={handleSignOut}
             disabled={authBusy}
-            className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-4 py-2 text-sm text-text transition-all hover:border-accent/30 hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 disabled:opacity-60"
+            className="inline-flex items-center gap-2 rounded-full border border-stone-300 px-4 py-2 text-sm font-medium text-stone-800 transition-all hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400 disabled:opacity-60"
           >
             {authBusy ? <Loader2 size={14} className="animate-spin" /> : <LogOut size={14} />}
             Sign out
           </button>
         </div>
-      ) : backendAvailable ? (
-        <div className="mt-5 space-y-4">
-          <div className="inline-flex rounded-2xl border border-border bg-surface/80 p-1 text-xs text-subtle">
+      ) : (
+        <div className="py-6">
+          <div className="inline-flex rounded-full bg-stone-100 p-1 text-sm text-stone-600">
             <button
               type="button"
               onClick={() => setTab("signin")}
-              className={`rounded-xl px-3 py-2 transition-all ${tab === "signin" ? "bg-card text-text shadow-sm" : "hover:text-text"}`}
+              className={`rounded-full px-4 py-2 transition-all ${tab === "signin" ? "bg-white text-stone-900 shadow-sm" : "hover:text-stone-900"}`}
             >
               Sign in
             </button>
             <button
               type="button"
               onClick={() => setTab("signup")}
-              className={`rounded-xl px-3 py-2 transition-all ${tab === "signup" ? "bg-card text-text shadow-sm" : "hover:text-text"}`}
+              className={`rounded-full px-4 py-2 transition-all ${tab === "signup" ? "bg-white text-stone-900 shadow-sm" : "hover:text-stone-900"}`}
             >
               Create account
             </button>
           </div>
 
-          {tab === "signin" ? (
-            <>
-              <form className="space-y-3" onSubmit={handleSignIn}>
-                <label className="block text-sm text-subtle">
-                  Email
-                  <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" className="mt-1 w-full rounded-xl border border-border bg-surface px-3 py-3 text-sm text-text focus:border-accent/50 focus:outline-none focus:ring-2 focus:ring-accent/20" required />
-                </label>
-                <label className="block text-sm text-subtle">
-                  Password
-                  <input value={password} onChange={(event) => setPassword(event.target.value)} type="password" className="mt-1 w-full rounded-xl border border-border bg-surface px-3 py-3 text-sm text-text focus:border-accent/50 focus:outline-none focus:ring-2 focus:ring-accent/20" required />
-                </label>
-                <button type="submit" disabled={authBusy} className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm text-white transition-all hover:bg-accent-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 disabled:opacity-60">
-                  {authBusy ? <Loader2 size={14} className="animate-spin" /> : <LogIn size={14} />}
-                  Sign in with Supabase
-                </button>
-              </form>
+          {backendAvailable ? (
+            <div className="mt-5 space-y-5">
+              {tab === "signin" ? (
+                <form className="space-y-3" onSubmit={handleSignIn}>
+                  <input
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    type="email"
+                    placeholder="Email"
+                    className="w-full rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-900 placeholder:text-stone-400 focus:border-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-200"
+                    required
+                  />
+                  <input
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    type="password"
+                    placeholder="Password"
+                    className="w-full rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-900 placeholder:text-stone-400 focus:border-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-200"
+                    required
+                  />
+                  <button
+                    type="submit"
+                    disabled={authBusy}
+                    className="inline-flex items-center gap-2 rounded-full bg-stone-900 px-5 py-3 text-sm font-medium text-white transition-all hover:bg-stone-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400 disabled:opacity-60"
+                  >
+                    {authBusy ? <Loader2 size={14} className="animate-spin" /> : <LogIn size={14} />}
+                    Continue
+                  </button>
+                </form>
+              ) : (
+                <form className="space-y-3" onSubmit={handleSignUp}>
+                  <input
+                    value={name}
+                    onChange={(event) => setName(event.target.value)}
+                    type="text"
+                    placeholder="Full name"
+                    className="w-full rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-900 placeholder:text-stone-400 focus:border-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-200"
+                    required
+                  />
+                  <input
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    type="email"
+                    placeholder="Email"
+                    className="w-full rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-900 placeholder:text-stone-400 focus:border-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-200"
+                    required
+                  />
+                  <input
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    type="password"
+                    placeholder="Password"
+                    className="w-full rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-900 placeholder:text-stone-400 focus:border-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-200"
+                    required
+                    minLength={8}
+                  />
+                  <button
+                    type="submit"
+                    disabled={authBusy}
+                    className="inline-flex items-center gap-2 rounded-full bg-stone-900 px-5 py-3 text-sm font-medium text-white transition-all hover:bg-stone-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400 disabled:opacity-60"
+                  >
+                    {authBusy ? <Loader2 size={14} className="animate-spin" /> : <UserPlus size={14} />}
+                    Create student account
+                  </button>
+                </form>
+              )}
 
-              <div className="rounded-2xl border border-border bg-surface/60 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-subtle">Demo credentials</p>
-                <p className="mt-2 text-sm leading-6 text-subtle">
-                  This is a demo build. Use one of the seeded accounts below to sign in quickly.
-                </p>
+              <div className="rounded-[24px] border border-stone-200 bg-stone-50 p-4">
+                <p className="text-xs font-medium uppercase tracking-[0.18em] text-stone-500">Demo accounts</p>
                 <div className="mt-3 space-y-2">
                   {DEMO_CREDENTIALS.map((demo) => (
                     <button
                       key={demo.email}
                       type="button"
                       onClick={() => fillDemoCredentials(demo)}
-                      className="w-full rounded-2xl border border-border bg-card px-4 py-3 text-left transition-all hover:border-accent/30 hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+                      className="flex w-full items-center justify-between rounded-2xl border border-stone-200 bg-white px-4 py-3 text-left transition-all hover:border-stone-300 hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400"
                     >
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="text-sm font-medium text-text">{demo.label}</span>
-                        <span className="text-[11px] uppercase tracking-wide text-subtle">{getRoleLabel(demo.role)}</span>
+                      <div>
+                        <p className="text-sm font-medium text-stone-900">{demo.label}</p>
+                        <p className="text-sm text-stone-500">{demo.email}</p>
                       </div>
-                      <p className="mt-1 text-sm text-subtle">{demo.email}</p>
-                      <p className="mt-1 text-xs text-subtle">Password: {demo.password}</p>
+                      <ArrowRight size={14} className="text-stone-400" />
                     </button>
                   ))}
                 </div>
               </div>
-            </>
+            </div>
           ) : (
-            <form className="space-y-3" onSubmit={handleSignUp}>
-              <label className="block text-sm text-subtle">
-                Full name
-                <input value={name} onChange={(event) => setName(event.target.value)} type="text" className="mt-1 w-full rounded-xl border border-border bg-surface px-3 py-3 text-sm text-text focus:border-accent/50 focus:outline-none focus:ring-2 focus:ring-accent/20" required />
-              </label>
-              <label className="block text-sm text-subtle">
-                Email
-                <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" className="mt-1 w-full rounded-xl border border-border bg-surface px-3 py-3 text-sm text-text focus:border-accent/50 focus:outline-none focus:ring-2 focus:ring-accent/20" required />
-              </label>
-              <label className="block text-sm text-subtle">
-                Password
-                <input value={password} onChange={(event) => setPassword(event.target.value)} type="password" className="mt-1 w-full rounded-xl border border-border bg-surface px-3 py-3 text-sm text-text focus:border-accent/50 focus:outline-none focus:ring-2 focus:ring-accent/20" required minLength={8} />
-              </label>
-              <button type="submit" disabled={authBusy} className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm text-white transition-all hover:bg-accent-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 disabled:opacity-60">
-                {authBusy ? <Loader2 size={14} className="animate-spin" /> : <UserPlus size={14} />}
-                Create student account
-              </button>
-            </form>
+            <div className="mt-5 rounded-[24px] border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+              <div className="flex items-center gap-2">
+                <AlertCircle size={16} />
+                Supabase is not configured yet.
+              </div>
+            </div>
           )}
-        </div>
-      ) : (
-        <div className="mt-5 rounded-2xl border border-warning/20 bg-warning/10 p-4 text-sm text-subtle">
-          <div className="flex items-center gap-2 text-warning">
-            <AlertCircle size={16} />
-            Supabase is not configured yet.
-          </div>
-          <p className="mt-2 leading-6">
-            Add `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` to enable sign-in, sign-up, and Postgres-backed support data. Until then, the existing mock workflow remains available.
-          </p>
         </div>
       )}
 
-      <div className="mt-4 rounded-2xl border border-border bg-surface/60 p-4">
-        <div className="flex items-center gap-2 text-subtle">
-          <KeyRound size={15} />
-          <p className="text-sm font-medium text-text">How roles work</p>
-        </div>
-        <p className="mt-2 text-sm leading-6 text-subtle">
-          Demo mode still supports mock role switching. In Supabase mode, new users sign up as students by default. Promote staff accounts to `agent` or `admin` by updating the `profiles` table in Postgres.
-        </p>
-      </div>
-
-      {status && <div className={`mt-4 rounded-2xl border px-4 py-3 text-sm ${statusClass}`}>{status.message}</div>}
+      {status && <div className={`rounded-2xl border px-4 py-3 text-sm ${statusClass}`}>{status.message}</div>}
     </section>
   );
 }

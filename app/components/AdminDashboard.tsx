@@ -76,38 +76,38 @@ export function AdminDashboard() {
   }, [sessions]);
 
   return (
-    <div className="min-h-full bg-ink px-4 py-6 text-text md:px-6">
+    <div className="min-h-full bg-[#f6f2ea] px-4 py-6 text-stone-900 md:px-6">
       <div className="mx-auto max-w-7xl space-y-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-subtle">Admin View</p>
-            <h1 className="mt-1 text-2xl font-semibold text-text sm:text-3xl">Support Operations Dashboard</h1>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-subtle">Track queue health, service responsiveness, escalations, agent performance, and live backend operations across the skl8 support platform.</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-stone-500">Admin View</p>
+            <h1 className="mt-1 text-2xl font-semibold text-stone-900 sm:text-3xl">Support Operations Dashboard</h1>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-stone-600">Track queue health, responsiveness, escalations, and support operations in one calm view.</p>
           </div>
           <AuthStatus />
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-3xl border border-border bg-card p-5 shadow-sm"><div className="flex items-center gap-2 text-subtle"><Users size={16} /><span className="text-xs uppercase tracking-wide">Total requests</span></div><p className="mt-3 text-3xl font-semibold">{metrics.totalRequests}</p></div>
-          <div className="rounded-3xl border border-border bg-card p-5 shadow-sm"><div className="flex items-center gap-2 text-subtle"><Clock3 size={16} /><span className="text-xs uppercase tracking-wide">Open queue</span></div><p className="mt-3 text-3xl font-semibold">{metrics.openQueue}</p></div>
-          <div className="rounded-3xl border border-border bg-card p-5 shadow-sm"><div className="flex items-center gap-2 text-subtle"><BarChart3 size={16} /><span className="text-xs uppercase tracking-wide">Avg first response</span></div><p className="mt-3 text-3xl font-semibold">{metrics.firstResponse.toFixed(0)} min</p></div>
-          <div className="rounded-3xl border border-border bg-card p-5 shadow-sm"><div className="flex items-center gap-2 text-subtle"><CheckCircle2 size={16} /><span className="text-xs uppercase tracking-wide">Avg resolution</span></div><p className="mt-3 text-3xl font-semibold">{metrics.resolutionTime.toFixed(0)} min</p></div>
-          <div className="rounded-3xl border border-border bg-card p-5 shadow-sm"><div className="flex items-center gap-2 text-subtle"><ShieldAlert size={16} /><span className="text-xs uppercase tracking-wide">Escalation rate</span></div><p className="mt-3 text-3xl font-semibold">{metrics.escalationRate}%</p></div>
-          <div className="rounded-3xl border border-border bg-card p-5 shadow-sm"><div className="flex items-center gap-2 text-subtle"><Star size={16} /><span className="text-xs uppercase tracking-wide">Average CSAT</span></div><p className="mt-3 text-3xl font-semibold">{metrics.csat.toFixed(1) || "0.0"}</p></div>
-          <div className="rounded-3xl border border-border bg-card p-5 shadow-sm"><div className="flex items-center gap-2 text-subtle"><Users size={16} /><span className="text-xs uppercase tracking-wide">Assigned agents</span></div><p className="mt-3 text-3xl font-semibold">{Object.keys(metrics.agentWorkload).length}</p></div>
+          <div className="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm"><div className="flex items-center gap-2 text-stone-500"><Users size={16} /><span className="text-xs uppercase tracking-wide">Total requests</span></div><p className="mt-3 text-3xl font-semibold">{metrics.totalRequests}</p></div>
+          <div className="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm"><div className="flex items-center gap-2 text-stone-500"><Clock3 size={16} /><span className="text-xs uppercase tracking-wide">Open queue</span></div><p className="mt-3 text-3xl font-semibold">{metrics.openQueue}</p></div>
+          <div className="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm"><div className="flex items-center gap-2 text-stone-500"><BarChart3 size={16} /><span className="text-xs uppercase tracking-wide">Avg first response</span></div><p className="mt-3 text-3xl font-semibold">{metrics.firstResponse.toFixed(0)} min</p></div>
+          <div className="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm"><div className="flex items-center gap-2 text-stone-500"><CheckCircle2 size={16} /><span className="text-xs uppercase tracking-wide">Avg resolution</span></div><p className="mt-3 text-3xl font-semibold">{metrics.resolutionTime.toFixed(0)} min</p></div>
+          <div className="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm"><div className="flex items-center gap-2 text-stone-500"><ShieldAlert size={16} /><span className="text-xs uppercase tracking-wide">Escalation rate</span></div><p className="mt-3 text-3xl font-semibold">{metrics.escalationRate}%</p></div>
+          <div className="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm"><div className="flex items-center gap-2 text-stone-500"><Star size={16} /><span className="text-xs uppercase tracking-wide">Average CSAT</span></div><p className="mt-3 text-3xl font-semibold">{metrics.csat.toFixed(1) || "0.0"}</p></div>
+          <div className="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm"><div className="flex items-center gap-2 text-stone-500"><Users size={16} /><span className="text-xs uppercase tracking-wide">Assigned agents</span></div><p className="mt-3 text-3xl font-semibold">{Object.keys(metrics.agentWorkload).length}</p></div>
         </div>
 
         <DatabaseOperationsPanel sessionCount={sessions.length} onRefreshSessions={refreshSessions} />
         <KnowledgeOperationsPanel />
 
-        <section className="rounded-3xl border border-border bg-card p-5 shadow-sm">
+        <section className="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-lg font-semibold">All requests</h2>
             {selectedSession && (
               <button
                 type="button"
                 onClick={() => setSelectedSessionId(null)}
-                className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2 text-sm text-text transition-all hover:border-accent/30 hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-stone-200 bg-surface px-3 py-2 text-sm text-stone-900 transition-all hover:border-stone-300 hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-300"
               >
                 <X size={14} />
                 Close request
@@ -121,23 +121,23 @@ export function AdminDashboard() {
                   key={session.id}
                   type="button"
                   onClick={() => setSelectedSessionId(session.id)}
-                  className={`w-full rounded-2xl border px-4 py-3 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 ${selectedSession?.id === session.id ? "border-accent/40 bg-card shadow-sm" : "border-border bg-surface/60 hover:border-accent/30 hover:bg-card"}`}
+                  className={`w-full cursor-pointer rounded-2xl border px-4 py-3 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-300 ${selectedSession?.id === session.id ? "border-accent/40 bg-card shadow-sm" : "border-stone-200 bg-stone-50 hover:border-stone-300 hover:bg-stone-50"}`}
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-                    <span className="font-semibold text-text">{session.title}</span>
-                    <span className="text-subtle">{session.agentCase?.status ?? "new"}</span>
+                    <span className="font-semibold text-stone-900">{session.title}</span>
+                    <span className="text-stone-500">{session.agentCase?.status ?? "new"}</span>
                   </div>
-                  <p className="mt-1 text-sm text-subtle">{session.agentCase?.summary ?? "Learner follow-up needed"}</p>
+                  <p className="mt-1 text-sm text-stone-500">{session.agentCase?.summary ?? "Learner follow-up needed"}</p>
                 </button>
               ))}
-              {sessions.length === 0 && <p className="text-sm text-subtle">No requests found.</p>}
+              {sessions.length === 0 && <p className="text-sm text-stone-500">No requests found.</p>}
             </div>
-            <div className="rounded-2xl border border-border bg-surface/60 p-4 xl:max-h-[720px] xl:overflow-y-auto">
+            <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4 xl:max-h-[720px] xl:overflow-y-auto">
               {selectedSession ? (
                 <div className="space-y-4">
-                  <div className="sticky top-0 z-10 -mx-4 -mt-4 border-b border-border bg-surface/95 px-4 py-4 backdrop-blur-sm">
-                    <h3 className="text-base font-semibold text-text">{selectedSession.title}</h3>
-                    <p className="mt-1 text-sm text-subtle">{selectedSession.agentCase?.summary ?? "Learner follow-up needed"}</p>
+                  <div className="sticky top-0 z-10 -mx-4 -mt-4 border-b border-stone-200 bg-white/95 px-4 py-4 backdrop-blur-sm">
+                    <h3 className="text-base font-semibold text-stone-900">{selectedSession.title}</h3>
+                    <p className="mt-1 text-sm text-stone-500">{selectedSession.agentCase?.summary ?? "Learner follow-up needed"}</p>
                   </div>
                   <div className="space-y-4 pt-4">
                     {selectedSession.messages.map((message) => (
@@ -146,69 +146,69 @@ export function AdminDashboard() {
                   </div>
                 </div>
               ) : (
-                <p className="text-sm text-subtle">Select a request to view the full conversation.</p>
+                <p className="text-sm text-stone-500">Select a request to view the full conversation.</p>
               )}
             </div>
           </div>
         </section>
 
         <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
-          <section className="rounded-3xl border border-border bg-card p-5 shadow-sm">
+          <section className="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm">
             <h2 className="text-lg font-semibold">Category mix</h2>
             <div className="mt-4 space-y-3">
               {Object.entries(metrics.categoryMix).map(([category, count]) => (
-                <div key={category} className="flex items-center justify-between rounded-2xl border border-border bg-surface/60 px-4 py-3 text-sm">
+                <div key={category} className="flex items-center justify-between rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm">
                   <span>{category}</span>
                   <span className="font-semibold">{count}</span>
                 </div>
               ))}
-              {Object.keys(metrics.categoryMix).length === 0 && <p className="text-sm text-subtle">No case volume yet.</p>}
+              {Object.keys(metrics.categoryMix).length === 0 && <p className="text-sm text-stone-500">No case volume yet.</p>}
             </div>
           </section>
 
-          <section className="rounded-3xl border border-border bg-card p-5 shadow-sm">
+          <section className="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm">
             <h2 className="text-lg font-semibold">Agent workload</h2>
             <div className="mt-4 space-y-3">
               {Object.entries(metrics.agentWorkload).map(([agent, count]) => (
-                <div key={agent} className="flex items-center justify-between rounded-2xl border border-border bg-surface/60 px-4 py-3 text-sm">
+                <div key={agent} className="flex items-center justify-between rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm">
                   <span>{agent}</span>
                   <span className="font-semibold">{count} cases</span>
                 </div>
               ))}
-              {Object.keys(metrics.agentWorkload).length === 0 && <p className="text-sm text-subtle">No assigned workload yet.</p>}
+              {Object.keys(metrics.agentWorkload).length === 0 && <p className="text-sm text-stone-500">No assigned workload yet.</p>}
             </div>
           </section>
 
-          <section className="rounded-3xl border border-border bg-card p-5 shadow-sm lg:col-span-2 xl:col-span-1">
+          <section className="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm lg:col-span-2 xl:col-span-1">
             <h2 className="text-lg font-semibold">Resolved by agent</h2>
             <div className="mt-4 space-y-3">
               {Object.entries(metrics.agentResolutions).map(([agent, count]) => (
-                <div key={agent} className="flex items-center justify-between rounded-2xl border border-border bg-surface/60 px-4 py-3 text-sm">
+                <div key={agent} className="flex items-center justify-between rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm">
                   <span>{agent}</span>
                   <span className="font-semibold">{count} resolved</span>
                 </div>
               ))}
-              {Object.keys(metrics.agentResolutions).length === 0 && <p className="text-sm text-subtle">No resolved cases yet.</p>}
+              {Object.keys(metrics.agentResolutions).length === 0 && <p className="text-sm text-stone-500">No resolved cases yet.</p>}
             </div>
           </section>
         </div>
 
-        <section className="rounded-3xl border border-border bg-card p-5 shadow-sm">
-          <div className="flex items-center gap-2 text-subtle">
+        <section className="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center gap-2 text-stone-500">
             <AlertTriangle size={16} />
-            <h2 className="text-lg font-semibold text-text">Urgent learner cases</h2>
+            <h2 className="text-lg font-semibold text-stone-900">Urgent learner cases</h2>
           </div>
           <div className="mt-4 space-y-3">
             {metrics.urgentCases.map((session) => (
-              <div key={session.id} className="rounded-2xl border border-danger/20 bg-danger/5 px-4 py-3">
+              <div key={session.id} className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-sm font-semibold text-text">{session.title}</p>
-                  <span className="text-xs text-subtle">{session.agentCase?.assignedTo || "Unassigned"}</span>
+                  <p className="text-sm font-semibold text-stone-900">{session.title}</p>
+                  <span className="text-xs text-stone-500">{session.agentCase?.assignedTo || "Unassigned"}</span>
                 </div>
-                <p className="mt-1 text-sm text-subtle">{session.agentCase?.summary}</p>
+                <p className="mt-1 text-sm text-stone-500">{session.agentCase?.summary}</p>
               </div>
             ))}
-            {metrics.urgentCases.length === 0 && <p className="text-sm text-subtle">No urgent learner cases right now.</p>}
+            {metrics.urgentCases.length === 0 && <p className="text-sm text-stone-500">No urgent learner cases right now.</p>}
           </div>
         </section>
       </div>
