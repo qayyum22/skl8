@@ -5,10 +5,11 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { AppRole } from "@/types";
 import { useAppAuth } from "@/hooks/useAppAuth";
+import { getRoleLabel } from "@/app/lib/role-labels";
 
 const DEMO_CREDENTIALS = [
-  { label: "Customer demo", email: "ava.learner@skl8.demo", password: "Password123!", role: "customer" },
-  { label: "Agent demo", email: "jordan.agent@skl8.demo", password: "Password123!", role: "agent" },
+  { label: "Student demo", email: "ava.learner@skl8.demo", password: "Password123!", role: "customer" },
+  { label: "Human agent demo", email: "jordan.agent@skl8.demo", password: "Password123!", role: "agent" },
   { label: "Admin demo", email: "priya.admin@skl8.demo", password: "Password123!", role: "admin" },
 ] as const;
 
@@ -109,9 +110,9 @@ export function AuthPanel() {
               <p className="text-sm font-medium text-text">Signed in as {user.name}</p>
             </div>
             <p className="mt-2 text-sm text-subtle">{user.email}</p>
-            <p className="mt-1 text-xs uppercase tracking-wide text-subtle">Role: {user.role}</p>
+            <p className="mt-1 text-xs uppercase tracking-wide text-subtle">Role: {getRoleLabel(user.role)}</p>
             <p className="mt-3 text-xs leading-5 text-subtle">
-              Customer is the default Supabase role. Promote agent and admin users by updating the `profiles.role` value in Postgres.
+              Student is the default Supabase role. Promote human agent and admin users by updating the `profiles.role` value in Postgres.
             </p>
           </div>
           <button
@@ -175,7 +176,7 @@ export function AuthPanel() {
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <span className="text-sm font-medium text-text">{demo.label}</span>
-                        <span className="text-[11px] uppercase tracking-wide text-subtle">{demo.role}</span>
+                        <span className="text-[11px] uppercase tracking-wide text-subtle">{getRoleLabel(demo.role)}</span>
                       </div>
                       <p className="mt-1 text-sm text-subtle">{demo.email}</p>
                       <p className="mt-1 text-xs text-subtle">Password: {demo.password}</p>
@@ -200,7 +201,7 @@ export function AuthPanel() {
               </label>
               <button type="submit" disabled={authBusy} className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm text-white transition-all hover:bg-accent-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 disabled:opacity-60">
                 {authBusy ? <Loader2 size={14} className="animate-spin" /> : <UserPlus size={14} />}
-                Create customer account
+                Create student account
               </button>
             </form>
           )}
@@ -223,7 +224,7 @@ export function AuthPanel() {
           <p className="text-sm font-medium text-text">How roles work</p>
         </div>
         <p className="mt-2 text-sm leading-6 text-subtle">
-          Demo mode still supports mock role switching. In Supabase mode, new users sign up as customers by default. Promote staff accounts to `agent` or `admin` by updating the `profiles` table in Postgres.
+          Demo mode still supports mock role switching. In Supabase mode, new users sign up as students by default. Promote staff accounts to `agent` or `admin` by updating the `profiles` table in Postgres.
         </p>
       </div>
 

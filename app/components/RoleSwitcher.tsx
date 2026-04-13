@@ -3,6 +3,7 @@
 import { GraduationCap, LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAppAuth } from "@/hooks/useAppAuth";
+import { getRoleLabel } from "@/app/lib/role-labels";
 
 export function RoleSwitcher() {
   const router = useRouter();
@@ -14,7 +15,7 @@ export function RoleSwitcher() {
         <GraduationCap size={14} className="text-accent-light" />
         <span>Signed in as</span>
         <span className="text-sm font-medium text-text">{user.name}</span>
-        <span className="text-[11px] uppercase tracking-wide text-subtle">{user.role}</span>
+        <span className="text-[11px] uppercase tracking-wide text-subtle">{getRoleLabel(user.role)}</span>
         <button
           type="button"
           onClick={() => {
@@ -44,7 +45,7 @@ export function RoleSwitcher() {
       >
         {availableUsers.map((candidate) => (
           <option key={candidate.id} value={candidate.id}>
-            {candidate.name} ({candidate.role})
+            {candidate.name} ({getRoleLabel(candidate.role)})
           </option>
         ))}
       </select>

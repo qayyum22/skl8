@@ -61,7 +61,7 @@ export default function Home() {
               <ArrowRight size={14} />
             </Link>
             <Link href="/support/agent" className="rounded-2xl border border-border bg-card px-5 py-3 text-center text-sm text-text transition-all hover:border-accent/30 hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60">
-              Open agent queue
+              Open human agent queue
             </Link>
             <Link href="/support/admin" className="rounded-2xl border border-border bg-card px-5 py-3 text-center text-sm text-text transition-all hover:border-accent/30 hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60">
               Open admin KPIs

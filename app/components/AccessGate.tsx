@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Lock, ShieldCheck } from "lucide-react";
 import type { AppRole } from "@/types";
 import { useAppAuth } from "@/hooks/useAppAuth";
+import { getRoleLabel } from "@/app/lib/role-labels";
 
 interface Props {
   allowedRole: AppRole;
@@ -30,7 +31,7 @@ export function AccessGate({ allowedRole, title, description, children }: Props)
           <h1 className="text-2xl font-semibold text-text">{title}</h1>
           <p className="mt-3 text-sm leading-relaxed text-subtle">{description}</p>
           <p className="mt-3 text-sm text-subtle">
-            Signed in as <span className="font-medium text-text">{user.name}</span> ({user.role}).
+            Signed in as <span className="font-medium text-text">{user.name}</span> ({getRoleLabel(user.role)}).
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-2">
             {mode === "demo" && (
@@ -40,7 +41,7 @@ export function AccessGate({ allowedRole, title, description, children }: Props)
                 className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm text-white transition-all hover:bg-accent-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
               >
                 <ShieldCheck size={14} />
-                Switch to {allowedRole}
+                Switch to {getRoleLabel(allowedRole)}
               </button>
             )}
             <Link

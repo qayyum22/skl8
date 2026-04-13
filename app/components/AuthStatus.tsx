@@ -3,6 +3,7 @@
 import { GraduationCap, Loader2, LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAppAuth } from "@/hooks/useAppAuth";
+import { getRoleLabel } from "@/app/lib/role-labels";
 
 interface Props {
   compact?: boolean;
@@ -20,7 +21,7 @@ export function AuthStatus({ compact = false }: Props) {
     <div className={`inline-flex items-center gap-2 rounded-2xl border border-border bg-card text-subtle shadow-sm ${compact ? "px-2.5 py-2 text-[11px]" : "px-3 py-2 text-xs"}`}>
       <GraduationCap size={compact ? 12 : 14} className="text-accent-light" />
       <span className="hidden sm:inline">{user.name}</span>
-      <span className="text-[10px] uppercase tracking-wide">{user.role}</span>
+      <span className="text-[10px] uppercase tracking-wide">{getRoleLabel(user.role)}</span>
       <button
         type="button"
         onClick={() => {

@@ -107,6 +107,37 @@ export function useSessions(options: UseSessionsOptions = {}) {
 
   const shouldUseRemote = authReady && authMode === "supabase";
 
+  const mergeRemoteSession = useCallback((remoteSession: ChatSession) => {
+    setSessions((prev) => {
+      const existingIndex = prev.findIndex((session) => session.id === remoteSession.id);
+      if (existingIndex === -1) {
+        return [remoteSession, ...prev].slice(0, MAX_SESSIONS);
+      }
+
+      const existing = prev[existingIndex];
+      if (existing.updatedAt.getTime() > remoteSession.updatedAt.getTime()) {
+        return prev;
+      }
+
+      const next = [...prev];
+      next[existingIndex] = remoteSession;
+      next.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+      return next;
+    });
+
+    setActiveId((currentActive) => currentActive ?? remoteSession.id);
+  }, []);
+
+  const persistRemoteSession = useCallback((session: ChatSession) => {
+    return queueRemoteWrite(async () => {
+      const savedSession = await saveRemoteSession(session);
+      if (savedSession) {
+        mergeRemoteSession(savedSession);
+      }
+      return savedSession;
+    });
+  }, [mergeRemoteSession]);
+
   const refreshSessions = useCallback(async () => {
     if (!shouldUseRemote) {
       const seeded = loadDemoSessions();
@@ -223,11 +254,11 @@ export function useSessions(options: UseSessionsOptions = {}) {
     setActiveId(session.id);
 
     if (shouldUseRemote) {
-      void queueRemoteWrite(() => saveRemoteSession(session));
+      void persistRemoteSession(session);
     }
 
     return session;
-  }, [shouldUseRemote]);
+  }, [persistRemoteSession, shouldUseRemote]);
 
   const updateSession = useCallback((id: string, messages: Message[]) => {
     let nextSession: ChatSession | null = null;
@@ -248,9 +279,9 @@ export function useSessions(options: UseSessionsOptions = {}) {
     );
 
     if (shouldUseRemote && nextSession) {
-      void queueRemoteWrite(() => saveRemoteSession(nextSession as ChatSession));
+      void persistRemoteSession(nextSession as ChatSession);
     }
-  }, [shouldUseRemote]);
+  }, [persistRemoteSession, shouldUseRemote]);
 
   const appendMessage = useCallback((sessionId: string, message: Message) => {
     let nextSession: ChatSession | null = null;
@@ -279,9 +310,9 @@ export function useSessions(options: UseSessionsOptions = {}) {
     );
 
     if (shouldUseRemote && nextSession) {
-      void queueRemoteWrite(() => saveRemoteSession(nextSession as ChatSession));
+      void persistRemoteSession(nextSession as ChatSession);
     }
-  }, [shouldUseRemote]);
+  }, [persistRemoteSession, shouldUseRemote]);
 
   const updateAgentCase = useCallback(
     (sessionId: string, patch: Partial<AgentCase> & { status?: AgentCaseStatus; severity?: AgentSeverity }) => {
@@ -308,10 +339,10 @@ export function useSessions(options: UseSessionsOptions = {}) {
       );
 
       if (shouldUseRemote && nextSession) {
-        void queueRemoteWrite(() => saveRemoteSession(nextSession as ChatSession));
+        void persistRemoteSession(nextSession as ChatSession);
       }
     },
-    [shouldUseRemote]
+    [persistRemoteSession, shouldUseRemote]
   );
 
   const deleteSession = useCallback(
@@ -356,9 +387,9 @@ export function useSessions(options: UseSessionsOptions = {}) {
     );
 
     if (shouldUseRemote && nextSession) {
-      void queueRemoteWrite(() => saveRemoteSession(nextSession as ChatSession));
+      void persistRemoteSession(nextSession as ChatSession);
     }
-  }, [shouldUseRemote]);
+  }, [persistRemoteSession, shouldUseRemote]);
 
   return {
     sessions,

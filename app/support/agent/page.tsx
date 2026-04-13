@@ -5,7 +5,7 @@ export default function AgentPage() {
   return (
     <AccessGate
       allowedRole="agent"
-      title="Agent access required"
+      title="Human agent access required"
       description="This queue is only available to learner support representatives in the skl8 workspace."
     >
       <AgentConsole />
